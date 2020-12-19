@@ -1,0 +1,34 @@
+#!/bin/python3
+
+import argparse
+import subprocess
+
+
+# Commands
+def scalafmt(args):
+    subprocess.run(['coursier', 'launch', 'scalafmt', '--', './app'])
+
+
+def sbt(args):
+    cmd = ['sbt']
+    if args.no_supershell:
+        cmd += ['--supershell=false']
+    subprocess.run(cmd)
+
+
+# Arg parsing
+parser = argparse.ArgumentParser(description="Development tools for rappelle-be")
+subparsers = parser.add_subparsers()
+
+parser_scalafmt = subparsers.add_parser('scalafmt')
+parser_scalafmt.set_defaults(func=scalafmt)
+
+parser_sbt = subparsers.add_parser('sbt')
+parser_sbt.set_defaults(func=sbt)
+parser_sbt.add_argument("--no-supershell", dest="no_supershell", action="store_true")
+
+
+# Script
+if __name__ == "__main__":
+    args = parser.parse_args()
+    args.func(args)
