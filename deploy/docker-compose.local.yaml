@@ -1,0 +1,10 @@
+version: "3.9"
+services:
+  postgres:
+    volumes:
+      - pgdata-rappelle-be-local:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=theuser
+      - POSTGRES_PASSWORD=thepassword
+volumes:
+  pgdata-rappelle-be-local:

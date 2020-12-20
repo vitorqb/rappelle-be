@@ -6,6 +6,11 @@ target
 /.project
 /.settings
 /RUNNING_PID
-/.bloop
+.bloop
 /.metals
 /.g8
+/.dir-locals.el
+
+# Local config files
+/conf/application.dev.conf
+/deploy/docker-compose.dev.yaml

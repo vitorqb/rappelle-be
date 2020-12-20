@@ -1,0 +1,9 @@
+version: "3.9"
+services:
+  postgres:
+    build: ./postgres
+    ports:
+      - "5000:5432"
+    environment:
+      - POSTGRES_DB=rappelle-be
+      - POSTGRES_DB_2=rappelle-be-test

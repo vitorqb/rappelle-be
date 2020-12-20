@@ -4,5 +4,5 @@
 # ~~~~
 
 # An example controller showing a sample home page
-POST    /auth/token                 auth.AuthController.postToken()
-
+POST    /api/auth/token             auth.AuthController.postToken()
+GET     /api/auth/ping              auth.AuthController.ping()
