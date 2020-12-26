@@ -1,6 +1,8 @@
-version: "3.9"
+version: "3.7"
 services:
   postgres:
+    ports:
+      - "5000:5432" 
     volumes:
       - pgdata-rappelle-be-local:/var/lib/postgresql/data
     environment:

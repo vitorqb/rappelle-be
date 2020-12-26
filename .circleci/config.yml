@@ -1,0 +1,64 @@
+# Check https://circleci.com/docs/2.0/language-clojure/ for more details
+version: 2
+jobs:
+
+  test:
+    docker: 
+      - image: vitorqb23/rappelle-be-ci:1
+    steps:
+      - checkout
+      - run:
+          name: Install sbt
+          command: sbt --version
+      - run:
+          name: Run Unit Tests
+          command: rappelle-be-tools test
+
+  scalafmt:
+    docker:
+      - image: vitorqb23/rappelle-be-ci:1
+    steps:
+      - checkout
+      - run:
+          name: Scalafmt check
+          command: rappelle-be-tools scalafmt --check
+
+  funTest:
+    machine: 
+      image: ubuntu-2004:202010-01
+    steps:
+      - run:
+          name: Setup Environment Variables
+          command: |
+            echo "export PATH=$(pwd)/dev:$PATH" | tee $BASH_ENV
+            echo "export RAPPELLE_BE_REPO_ROOT=$(pwd)" | tee $BASH_ENV
+      - checkout
+      - run:
+          name: Installs functional tests docker-compose file
+          command: cp -v ./.circleci/docker-compose.funTest.yaml ./deploy/docker-compose.dev.yaml
+      - run:
+          name: Installs application conf file
+          command: cp -v .circleci/application.funTest.conf ./conf/application.funTest.conf
+      - run:
+          name: Start Postgres
+          command: ./dev/rappelle-be-tools postgres -d
+      - run:
+          name: Starts container for functional tests
+          command: ./dev/rappelle-be-tools docker-compose -- up -d funtest
+      - run:
+          name: Installs sbt (in container)
+          command: |
+            docker exec rappelle-be_funtest_1 bash -c 'cd /root/project && sbt --version'
+      - run:
+          name: Run functional tests (in container)
+          command: |
+            docker exec rappelle-be_funtest_1 /root/project/dev/rappelle-be-tools -D /root/project test --functional
+
+
+workflows:
+  version: 2
+  test:
+    jobs:
+      - test: {}
+      - funTest: {}
+      - scalafmt: {}

@@ -6,16 +6,23 @@ import play.api.db.evolutions.Evolutions
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.test.Helpers
 import play.api.Logger
+import com.typesafe.config.ConfigFactory
 
 object WithTestApp {
 
-  def getApp(conf: Map[String, Any]): Application =
+  def getApp(conf: Map[String, Any]): Application = {
+    val funTestConfig =
+      ConfigFactory.parseResources("application.funTest.conf").resolve()
     GuiceApplicationBuilder()
       .configure(conf)
       .configure(
-        "db.default.url" -> "jdbc:postgresql://localhost:5000/rappelle-be-test"
+        "db.default.driver" -> funTestConfig.getString("funtest.db.driver"),
+        "db.default.url" -> funTestConfig.getString("funtest.db.url"),
+        "db.default.username" -> funTestConfig.getString("funtest.db.username"),
+        "db.default.password" -> funTestConfig.getString("funtest.db.password")
       )
       .build()
+  }
 
   def apply(conf: Map[String, Any])(block: Application => Any): Any = {
     val app = getApp(conf)

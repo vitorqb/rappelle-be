@@ -1,4 +1,4 @@
-#!/bin/python3
+#!/usr/bin/python3
 
 import argparse
 import subprocess
@@ -12,16 +12,10 @@ import enum
 DB_NAME = "rappelle-be"
 TEST_DB_NAME = "rappelle-be-test"
 POSTGRES_USER = "theuser"
+PROJECT_NAME = "rappelle-be"
 
 
 # Helpers
-class Contexts(enum.Enum):
-    """ Helper enumeration for possible application running contexts """
-    dev = 'dev'
-    local = 'local'
-    prod = 'prod'
-
-
 class Runner():
     """ A configurable runner for commands """
 
@@ -33,25 +27,49 @@ class Runner():
     def run(self, args, cwd=None):
         cwd = cwd or self.cwd
         print(f"Running {args} in {cwd}")
-        subprocess.run(args, cwd=cwd)
+        subprocess.run(args, cwd=cwd, check=True)
 
     def run_docker_compose(self, args):
         cmd = [
             *self.docker_compose_cmd,
+            f"-p{PROJECT_NAME}",
             "-fdocker-compose.yaml",
             "-fdocker-compose.local.yaml",
             "-fdocker-compose.dev.yaml"
         ]
         self.run([*cmd, *args], self.deploy_dir)
 
-    def run_sbt(self, args, context=Contexts.dev):
+    def run_sbt(self, args):
         cmd = ["sbt"]
         self.run([*cmd, *args], self.cwd)
 
 
+# Bootstrap
+def bootstrap(args):
+
+    if not os.path.exists(f"{args.directory}/conf/application.dev.conf"):
+        print(f"BOOTSTRAP: Creating {args.directory}/conf/application.dev.conf")
+        with open(f"{args.directory}/conf/application.dev.conf", "wb") as f:
+            f.write(b"include \"application.local\"")
+
+    if not os.path.exists(f"{args.directory}/conf/application.funTest.conf"):
+        print(f"BOOTSTRAP: Creating {args.directory}/conf/application.funTest.conf")
+        with open(f"{args.directory}/conf/application.funTest.conf", "wb") as f:
+            f.write(b"include \"application.local\"")
+
+    if not os.path.exists(f"{args.directory}/deploy/docker-compose.dev.yaml"):
+        print(f"BOOTSTRAP: Creating {args.directory}/deploy/docker-compose.dev.yaml")
+        with open(f"{args.directory}/deploy/docker-compose.dev.yaml", "wb") as f:
+            f.write(b"version: \"3.7\"")
+
+
 # Commands
 def scalafmt(r, args):
-    r.run(['coursier', 'launch', 'scalafmt', '--', "--debug", './app', './test'])
+    cmd = ['coursier', 'launch', 'scalafmt', '--']
+    if args.check:
+        cmd += ['--check']
+    cmd += ["--debug", './app', './test']
+    r.run(cmd)
 
 
 def sbt(r, args):
@@ -66,16 +84,36 @@ def test(r, args):
     subCmd = f"{context} / testOnly"
     if args.pattern and args.pattern != "":
         subCmd += f" {args.pattern}"
-    r.run_sbt([subCmd], Contexts.local)
+    r.run_sbt([subCmd])
 
 
 def postgres(r, args):
-    r.run_docker_compose(['up', '--force-recreate', 'postgres'])
+    cmd = ['up', '--force-recreate']
+    if args.detach:
+        cmd += ["--detach"]
+    cmd += ['postgres']
+    r.run_docker_compose(cmd)
+
+
+def wait_for_postgres(r, args):
+    cmd = [
+        "exec",
+        "postgres",
+        "bash",
+        "-c",
+        "until pg_isready; do sleep 2; done"
+    ]
+    r.run_docker_compose(cmd)
 
 
 def postgres_shell(r, args):
     db = (TEST_DB_NAME if args.test else DB_NAME)
     r.run_docker_compose(['exec', 'postgres', 'psql', db, POSTGRES_USER])
+
+
+def docker_compose(r, args):
+    cmd = args.command
+    r.run_docker_compose(cmd)
 
 
 # Arg parsing
@@ -95,6 +133,7 @@ subparsers = parser.add_subparsers()
 
 parser_scalafmt = subparsers.add_parser('scalafmt')
 parser_scalafmt.set_defaults(func=scalafmt)
+parser_scalafmt.add_argument("-c", "--check", action="store_true", help="Check if formatted instead of fix")
 
 parser_sbt = subparsers.add_parser('sbt')
 parser_sbt.set_defaults(func=sbt)
@@ -102,6 +141,7 @@ parser_sbt.add_argument("--no-supershell", dest="no_supershell", action="store_t
 
 parser_postgres = subparsers.add_parser('postgres')
 parser_postgres.set_defaults(func=postgres)
+parser_postgres.add_argument("-d", "--detach", help="Detaches after running", action="store_true")
 
 parser_test = subparsers.add_parser('test')
 parser_test.set_defaults(func=test)
@@ -112,10 +152,17 @@ parser_postgres_shell = subparsers.add_parser('postgres-shell')
 parser_postgres_shell.set_defaults(func=postgres_shell)
 parser_postgres_shell.add_argument("-t", "--test", help="Connect to test db instead.", action="store_true")
 
+parser_wait_for_postgres = subparsers.add_parser('wait-for-postgres')
+parser_wait_for_postgres.set_defaults(func=wait_for_postgres)
+
+parser_docker_compose = subparsers.add_parser('docker-compose')
+parser_docker_compose.set_defaults(func=docker_compose)
+parser_docker_compose.add_argument('command', nargs='+', help="Runs command in docker-compose")
 
 # Script
 if __name__ == "__main__":
     args = parser.parse_args()
+    bootstrap(args)
     docker_compose_cmd = json.loads(args.docker_compose_cmd)
     runner = Runner(cwd=args.directory, docker_compose_cmd=docker_compose_cmd)
     args.func(runner, args)

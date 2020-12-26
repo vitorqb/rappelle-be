@@ -19,6 +19,7 @@ lazy val root = (project in file("."))
     //Settings for functional tests
     inConfig(FunTest)(Defaults.testTasks),
     FunTest / testOptions := Seq(Tests.Filter(funTestFilter)),
+    FunTest / javaOptions += "-Dconfig.resource=application.local.conf",
   )
   .enablePlugins(PlayScala)
 

@@ -16,7 +16,7 @@ trait RequestUserExtractorLike extends Results {
       block: User => Future[Result]
   ): Future[Result] = {
     extractUser(request).flatMap {
-      case None => Future.successful(Unauthorized)
+      case None    => Future.successful(Unauthorized)
       case Some(x) => block(x)
     }
   }
