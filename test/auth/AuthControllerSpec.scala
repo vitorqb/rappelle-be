@@ -25,6 +25,7 @@ class AuthControllerSpec
   import AuthJsonSerializers._
 
   "postToken" should {
+
     "pass a CreateTokenRequest to the resource handler" in {
       WithTestContext() { c =>
         (c.resourceHandler.createToken(c.createTokenRequest)
@@ -34,6 +35,16 @@ class AuthControllerSpec
         val result = c.controller.postToken()(request)
         status(result) mustBe 200
         contentAsJson(result) mustBe Json.toJson(c.token)
+      }
+    }
+
+    "return 400 if user not found" in {
+      WithTestContext() { c =>
+        c.resourceHandler.createToken(any) throws new UserDoesNotExist
+        val request = FakeRequest().withBody(Json.toJson(c.createTokenRequest))
+        val result = c.controller.postToken()(request)
+        status(result) mustBe 400
+        contentAsJson(result) mustBe Json.obj("msg" -> "User does not exist")
       }
     }
   }

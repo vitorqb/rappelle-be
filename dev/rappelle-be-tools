@@ -4,7 +4,6 @@ import argparse
 import subprocess
 import os
 import json
-import enum
 
 
 # Globals
@@ -116,6 +115,27 @@ def docker_compose(r, args):
     r.run_docker_compose(cmd)
 
 
+def run(r, args):
+    cmd = "run -Dconfig.resource=application.local.conf"
+    if args.port:
+        cmd += f" {args.port}"
+    r.run_sbt([cmd])
+
+
+def curl(r, args):
+    url = f"127.0.0.1:9000{args.command[-1]}"
+    cmd = [
+        "curl",
+        "-H",
+        "Authorization: Bearer faketoken",
+        "-H",
+        "Content-Type: application/json",
+        *args.command[:-1],
+        url
+    ]
+    r.run(cmd)
+
+
 # Arg parsing
 parser = argparse.ArgumentParser(description="Development tools for rappelle-be")
 parser.add_argument(
@@ -158,6 +178,15 @@ parser_wait_for_postgres.set_defaults(func=wait_for_postgres)
 parser_docker_compose = subparsers.add_parser('docker-compose')
 parser_docker_compose.set_defaults(func=docker_compose)
 parser_docker_compose.add_argument('command', nargs='+', help="Runs command in docker-compose")
+
+parser_run = subparsers.add_parser('run')
+parser_run.set_defaults(func=run)
+parser_run.add_argument('-p', '--port')
+
+parser_curl = subparsers.add_parser('curl')
+parser_curl.set_defaults(func=curl)
+parser_curl.add_argument('command', nargs='+', help="Runs curl with custom headers. Assumes the relative url is the last param.")
+
 
 # Script
 if __name__ == "__main__":

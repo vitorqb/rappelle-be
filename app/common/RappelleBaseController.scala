@@ -25,7 +25,7 @@ trait JsonRequestParser { self: Results =>
 
 trait JsonRequestAction { self: BaseController =>
 
-  def jsonAsyncAction[A](block: Request[JsValue] => Future[Result]) =
+  def jsonAsyncAction(block: Request[JsValue] => Future[Result]) =
     Action.async(parse.tolerantJson)(block)
 
 }
