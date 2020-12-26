@@ -1,0 +1,40 @@
+# Check https://circleci.com/docs/2.0/language-clojure/ for more details
+version: 2
+jobs:
+
+  test:
+    docker: 
+      - image: openjdk:12
+    steps:
+      - checkout
+      - restore_cache:
+          key: sbt-cache
+      - run: ./circleci/run-tests.bash
+      - save_cache:
+          key: sbt-cache
+          paths:
+            - "~/.ivy2/cache"
+            - "~/.sbt"
+            - "~/.m2"
+
+  funTest:
+    docker: 
+      - image: openjdk:12
+    steps:
+      - checkout
+      - restore_cache:
+          key: sbt-cache
+      - run: ./circleci/run-funtests.bash
+      - save_cache:
+          key: sbt-cache
+          paths:
+            - "~/.ivy2/cache"
+            - "~/.sbt"
+            - "~/.m2"
+
+workflows:
+  version: 2
+  test:
+    jobs:
+      - test: {}
+

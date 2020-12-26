@@ -72,6 +72,16 @@ def test(r, args):
 def postgres(r, args):
     r.run_docker_compose(['up', '--force-recreate', 'postgres'])
 
+def wait_for_postgres(r, args):
+    cmd = [
+        "exec",
+        "postgres",
+        "bash",
+        "-c",
+        "until pg_isready; do sleep 2; done"
+    ]
+    r.run_docker_compose(cmd)
+
 
 def postgres_shell(r, args):
     db = (TEST_DB_NAME if args.test else DB_NAME)
@@ -111,6 +121,9 @@ parser_test.add_argument("-p", "--pattern", help="Test pattern to pass to sbt (e
 parser_postgres_shell = subparsers.add_parser('postgres-shell')
 parser_postgres_shell.set_defaults(func=postgres_shell)
 parser_postgres_shell.add_argument("-t", "--test", help="Connect to test db instead.", action="store_true")
+
+parser_wait_for_postgres = subparsers.add_parser('wait-for-postgres')
+parser_wait_for_postgres.set_defaults(func=wait_for_postgres)
 
 
 # Script
