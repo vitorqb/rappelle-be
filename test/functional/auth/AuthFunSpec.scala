@@ -13,30 +13,32 @@ import org.scalatest.time.Span
 import play.api.libs.json.Json
 import play.api.Application
 
-class AuthFunSpec extends PlaySpec with ScalaFutures {
+class TokenFlowAuthFunSpec extends PlaySpec with ScalaFutures {
 
   implicit val defaultPatience =
     PatienceConfig(timeout = Span(2, Seconds), interval = Span(5, Millis))
 
   "Token flow" should {
 
-    "get a token for an user" in new UnloggedUserContext().run { c =>
-      val postResult = c
-        .request(s"/api/auth/token")
-        .withBody(Json.obj("email" -> c.email, "password" -> c.password))
-        .execute("POST")
-        .futureValue
-      postResult.status mustBe 200
-      postResult.json must equal(
-        Json.obj(
-          "value" -> c.token,
-          "expiresAt" -> c.expiresAt
+    "get a token for an user" in {
+      WithUnloggedUserContext { c =>
+        val postResult = c
+          .request(s"/api/auth/token")
+          .withBody(Json.obj("email" -> c.email, "password" -> c.password))
+          .execute("POST")
+          .futureValue
+        postResult.status mustBe 200
+        postResult.json must equal(
+          Json.obj(
+            "value" -> c.token,
+            "expiresAt" -> c.expiresAt
+          )
         )
-      )
+      }
     }
 
-    "get a 200 on the ping endpoint if logged in" in new UnloggedUserContext()
-      .run { c =>
+    "get a 200 on the ping endpoint if logged in" in {
+      WithUnloggedUserContext { c =>
         val getResult = c
           .request(s"/api/auth/ping")
           .withHttpHeaders("Authorization" -> s"Bearer ${c.token}")
@@ -44,21 +46,35 @@ class AuthFunSpec extends PlaySpec with ScalaFutures {
           .futureValue
         getResult.status mustBe 204
       }
+    }
 
-    "get a 401 if invalid token" in new UnloggedUserContext().run { c =>
-      val getResult = c
-        .request("/api/auth/ping")
-        .withHttpHeaders("Authorization" -> s"Bearer FALSETOKEN")
-        .execute()
-        .futureValue
-      getResult.status mustBe 401
+    "get a 401 if invalid token" in {
+      WithUnloggedUserContext { c =>
+        val getResult = c
+          .request("/api/auth/ping")
+          .withHttpHeaders("Authorization" -> s"Bearer FALSETOKEN")
+          .execute()
+          .futureValue
+        getResult.status mustBe 401
+      }
     }
   }
 
 }
 
-class UnloggedUserContext() {
-  var app: Application = null
+case class UnloggedUserContext(
+    app: Application,
+    email: String,
+    password: String,
+    token: String,
+    expiresAt: String
+) {
+  def request(url: String) =
+    app.injector.instanceOf[WSClient].url(s"${testServerUrl}${url}")
+}
+
+object WithUnloggedUserContext {
+
   lazy val id = 123
   lazy val email = "a@b.c"
   lazy val password = "abc"
@@ -74,14 +90,12 @@ class UnloggedUserContext() {
     "services.clock.now" -> now
   )
 
-  def request(url: String) =
-    app.injector.instanceOf[WSClient].url(s"${testServerUrl}${url}")
-
-  def run(block: UnloggedUserContext => Any) = {
-    WithTestApp(appConf) { implicit runningApp =>
-      app = runningApp
+  def apply(block: UnloggedUserContext => Any) = {
+    WithTestApp(appConf) { app =>
       Helpers.running(TestServer(testServerPort, app)) {
-        block(this)
+        val context =
+          UnloggedUserContext(app, email, password, token, expiresAt)
+        block(context)
       }
     }
   }
