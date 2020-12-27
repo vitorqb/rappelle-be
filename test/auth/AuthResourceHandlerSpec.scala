@@ -2,6 +2,7 @@ package auth
 
 import org.scalatestplus.play.PlaySpec
 import org.mockito.IdiomaticMockito
+import org.mockito.ArgumentMatchersSugar
 import org.joda.time.DateTime
 import scala.concurrent.Future
 import org.scalatest.concurrent.ScalaFutures
@@ -10,6 +11,7 @@ import scala.concurrent.ExecutionContext
 class AuthResourceHandlerSpec
     extends PlaySpec
     with IdiomaticMockito
+    with ArgumentMatchersSugar
     with ScalaFutures {
 
   implicit val ec = ExecutionContext.global
@@ -44,12 +46,25 @@ class AuthResourceHandlerSpec
         val request =
           CreateUserRequest(requestInput.email, requestInput.password)
         val user = User(999, request.email)
+        c.userRepo.read(request.email) shouldReturn Future.successful(None)
         c.userRepo.create(request) shouldReturn Future.successful(user)
 
         val result = c.handler.createUser(requestInput).futureValue
 
         result must equal(user)
         c.userRepo.create(request) wasCalled once
+      }
+    }
+
+    "fail if user already exists" in {
+      WithTestContext() { c =>
+        val requestInput = CreateUserRequestInput(c.user.email, "pass")
+        c.userRepo.read(c.user.email) shouldReturn Future.successful(Some(c.user))
+
+        val result = c.handler.createUser(requestInput).failed.futureValue
+
+        result mustBe a [UserAlreadyExists]
+        c.userRepo.create(*) wasCalled 0.times
       }
     }
 

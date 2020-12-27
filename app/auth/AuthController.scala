@@ -56,8 +56,11 @@ object WithAuthErrorHandling extends Results {
   def apply(
       block: => Future[Result]
   )(implicit ec: ExecutionContext): Future[Result] = {
-    Future(block).flatten.recover { case e: UserDoesNotExist =>
-      BadRequest(Json.obj("msg" -> "User does not exist"))
+    Future(block).flatten.recover {
+      case e: UserDoesNotExist =>
+        BadRequest(Json.obj("msg" -> "User does not exist"))
+      case e: UserAlreadyExists =>
+        BadRequest(Json.obj("msg" -> "An user with this email already exists."))
     }
   }
 }

@@ -64,21 +64,23 @@ class AuthFunSpec extends PlaySpec with ScalaFutures {
 
     "create an user, get a token, and ping" in {
       WithUnloggedUserContext { c =>
+        val newUserEmail = "new@user.email"
+        val newUserPass = "newUserPass"
         val createResult = c
           .request(s"/api/auth/user")
-          .withBody(Json.obj("email" -> c.email, "password" -> c.password))
+          .withBody(Json.obj("email" -> newUserEmail, "password" -> newUserPass))
           .execute("POST")
           .futureValue
         createResult.status must equal(201)
         //FakeUserRepository increases ids by 1
         val expectedId = c.id + 1
         createResult.json must equal(
-          Json.obj("id" -> expectedId, "email" -> c.email)
+          Json.obj("id" -> expectedId, "email" -> newUserEmail)
         )
 
         val tokenResult = c
           .request("/api/auth/token")
-          .withBody(Json.obj("email" -> c.email, "password" -> c.password))
+          .withBody(Json.obj("email" -> newUserEmail, "password" -> newUserPass))
           .execute("POST")
           .futureValue
         tokenResult.status must equal(200)
