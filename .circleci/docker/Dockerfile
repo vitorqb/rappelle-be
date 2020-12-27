@@ -1,18 +1,17 @@
 FROM openjdk:14-buster
 
-# Prepare
-ENV PYTHONUNBUFFERED=1
-RUN apt-get --no-install-recommends -y update
-RUN apt-get --no-install-recommends install -y software-properties-common
-RUN apt-get --no-install-recommends -y update
-
-# Curl
-RUN apt-get --no-install-recommends -y install curl
+# Install 
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+    software-properties-common \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
 # Python
 RUN python3 -V
 
 # Prepares env vars
+ENV PYTHONUNBUFFERED=1
 ENV RAPPELLE_BE_REPO_ROOT=/root/project/
 ENV PATH="/root/project/dev:${PATH}"
 ENV PATH="/root/.local/share/coursier/bin:${PATH}"
