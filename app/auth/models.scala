@@ -7,7 +7,11 @@ case class CreateTokenRequest(
     val expiresAt: DateTime,
     val value: String
 )
-case class CreateUserRequest(val email: String, val password: String)
+case class CreateUserRequestInput(val email: String, val password: String)
+case class CreateUserRequest(
+    val email: String,
+    val password: String
+)
 case class User(val id: Int, val email: String)
 case class Token(val value: String, val expiresAt: DateTime, val userId: Int) {
   def isValid(now: DateTime): Boolean = expiresAt.isAfter(now)

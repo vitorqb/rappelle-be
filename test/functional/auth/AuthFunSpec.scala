@@ -13,7 +13,7 @@ import org.scalatest.time.Span
 import play.api.libs.json.Json
 import play.api.Application
 
-class TokenFlowAuthFunSpec extends PlaySpec with ScalaFutures {
+class AuthFunSpec extends PlaySpec with ScalaFutures {
 
   implicit val defaultPatience =
     PatienceConfig(timeout = Span(2, Seconds), interval = Span(5, Millis))
@@ -60,6 +60,41 @@ class TokenFlowAuthFunSpec extends PlaySpec with ScalaFutures {
     }
   }
 
+  "Create user flow" should {
+
+    "create an user, get a token, and ping" in {
+      WithUnloggedUserContext { c =>
+        val createResult = c
+          .request(s"/api/auth/user")
+          .withBody(Json.obj("email" -> c.email, "password" -> c.password))
+          .execute("POST")
+          .futureValue
+        createResult.status must equal(201)
+        //FakeUserRepository increases ids by 1
+        val expectedId = c.id + 1
+        createResult.json must equal(
+          Json.obj("id" -> expectedId, "email" -> c.email)
+        )
+
+        val tokenResult = c
+          .request("/api/auth/token")
+          .withBody(Json.obj("email" -> c.email, "password" -> c.password))
+          .execute("POST")
+          .futureValue
+        tokenResult.status must equal(200)
+
+        val token = (tokenResult.json \ "value").as[String]
+        val pingResult = c
+          .request("/api/auth/ping")
+          .withHttpHeaders("Authorization" -> s"Bearer $token")
+          .execute()
+          .futureValue
+        pingResult.status must equal(204)
+      }
+    }
+
+  }
+
 }
 
 case class UnloggedUserContext(
@@ -67,7 +102,8 @@ case class UnloggedUserContext(
     email: String,
     password: String,
     token: String,
-    expiresAt: String
+    expiresAt: String,
+    id: Int
 ) {
   def request(url: String) =
     app.injector.instanceOf[WSClient].url(s"${testServerUrl}${url}")
@@ -94,7 +130,7 @@ object WithUnloggedUserContext {
     WithTestApp(appConf) { app =>
       Helpers.running(TestServer(testServerPort, app)) {
         val context =
-          UnloggedUserContext(app, email, password, token, expiresAt)
+          UnloggedUserContext(app, email, password, token, expiresAt, id)
         block(context)
       }
     }

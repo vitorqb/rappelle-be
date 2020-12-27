@@ -7,7 +7,8 @@ import scala.concurrent.ExecutionContext
 
 @ImplementedBy(classOf[AuthResourceHandler])
 trait AuthResourceHandlerLike {
-  def createToken(request: CreateTokenRequestInput): Future[Token]
+  def createToken(requestInput: CreateTokenRequestInput): Future[Token]
+  def createUser(requestInput: CreateUserRequestInput): Future[User]
 }
 
 class AuthResourceHandler @Inject() (
@@ -30,5 +31,10 @@ class AuthResourceHandler @Inject() (
         authTokenRepo.create(request)
       }
     }
+  }
+
+  def createUser(requestInput: CreateUserRequestInput): Future[User] = {
+    val request = CreateUserRequest(requestInput.email, requestInput.password)
+    userRepo.create(request)
   }
 }
