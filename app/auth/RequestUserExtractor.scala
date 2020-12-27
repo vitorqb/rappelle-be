@@ -7,6 +7,7 @@ import scala.concurrent.Future
 import play.api.mvc.Results
 import scala.concurrent.ExecutionContext
 import play.api.Logger
+import services.ClockLike
 
 trait RequestUserExtractorLike extends Results {
 
@@ -27,7 +28,8 @@ trait RequestUserExtractorLike extends Results {
 
 class RequestUserExtractor(
     userRepo: UserRepositoryLike,
-    tokenRepo: AuthTokenRepositoryLike
+    tokenRepo: AuthTokenRepositoryLike,
+    clock: ClockLike
 )(implicit
     val ec: ExecutionContext
 ) extends RequestUserExtractorLike {
@@ -41,7 +43,7 @@ class RequestUserExtractor(
         header match {
           case TokenRegex(tokenValue) => {
             tokenRepo.read(tokenValue).flatMap {
-              case Some(token) =>
+              case Some(token) if token.isValid(clock.now()) =>
                 userRepo.read(token.userId).map {
                   case Some(user) => {
                     logger.info(s"Found user: ${user}")
@@ -52,6 +54,9 @@ class RequestUserExtractor(
                     None
                   }
                 }
+              case Some(token) =>
+                logger.info("Found expired token.")
+                Future.successful(None)
               case None => {
                 logger.info("Could not locate token for request")
                 Future.successful(None)

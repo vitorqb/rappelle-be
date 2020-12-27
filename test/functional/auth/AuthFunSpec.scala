@@ -64,12 +64,14 @@ class UnloggedUserContext() {
   lazy val password = "abc"
   lazy val token = "TOKEN"
   lazy val expiresAt = "2020-10-11T00:00:00.000Z"
+  lazy val now = "2020-01-11T00:00:00.000Z"
   lazy val appConf = Map(
     "auth.fakeUser.id" -> id,
     "auth.fakeUser.email" -> email,
     "auth.fakeUser.password" -> password,
     "auth.fakeToken.value" -> token,
-    "auth.fakeToken.expiresAt" -> expiresAt
+    "auth.fakeToken.expiresAt" -> expiresAt,
+    "services.clock.now" -> now
   )
 
   def request(url: String) =

@@ -86,7 +86,8 @@ class AuthModule extends AbstractModule {
   def requestUserExtractorLike(
       userRepo: UserRepositoryLike,
       tokenRepo: AuthTokenRepositoryLike,
+      clock: ClockLike,
       ec: ExecutionContext
   ): RequestUserExtractorLike =
-    new RequestUserExtractor(userRepo, tokenRepo)(ec)
+    new RequestUserExtractor(userRepo, tokenRepo, clock)(ec)
 }
