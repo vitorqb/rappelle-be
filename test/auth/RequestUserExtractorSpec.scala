@@ -10,6 +10,9 @@ import org.scalatest.concurrent.ScalaFutures
 import play.api.mvc.Results
 import services.ClockLike
 import play.api.libs.json.Json
+import org.scalatest.time.Seconds
+import org.scalatest.time.Millis
+import org.scalatest.time.Span
 
 class RequestUserExtractorSpec
     extends PlaySpec
@@ -18,6 +21,8 @@ class RequestUserExtractorSpec
     with Results {
 
   implicit val ec = ExecutionContext.global
+  implicit val defaultPatience =
+    PatienceConfig(timeout = Span(2, Seconds), interval = Span(5, Millis))
 
   "extractUser" should {
 
