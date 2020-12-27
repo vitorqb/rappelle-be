@@ -5,12 +5,14 @@ scalaVersion := "2.13.3"
 
 //A configuration key for functional tests, with helper functions to identify the test type
 lazy val FunTest = config("fun") extend(Test)
+lazy val AllTests = config("alltests") extend(Test)
 def funTestFilter(name: String): Boolean = name endsWith "FunSpec"
 def unitTestFilter(name: String): Boolean = (name endsWith "Spec") && !funTestFilter(name)
 
 //The project definition
 lazy val root = (project in file("."))
   .configs(FunTest)
+  .configs(AllTests)
   .settings(
     //Settings for unit test
     Test / testOptions := Seq(Tests.Filter(unitTestFilter)),
@@ -20,6 +22,11 @@ lazy val root = (project in file("."))
     inConfig(FunTest)(Defaults.testTasks),
     FunTest / testOptions := Seq(Tests.Filter(funTestFilter)),
     FunTest / javaOptions += "-Dconfig.resource=application.local.conf",
+
+    //Settings for all tests
+    inConfig(AllTests)(Defaults.testTasks),
+    AllTests / testOptions := Seq(),
+    AllTests / javaOptions += "-Dconfig.resource=application.local.conf",
   )
   .enablePlugins(PlayScala)
 

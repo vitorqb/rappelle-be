@@ -79,7 +79,12 @@ def sbt(r, args):
 
 
 def test(r, args):
-    context = ('FunTest' if args.functional else 'Test')
+    if args.functional:
+        context = 'FunTest'
+    elif args.all:
+        context = 'AllTests'
+    else:
+        context = 'Test'
     subCmd = f"{context} / testOnly"
     if args.pattern and args.pattern != "":
         subCmd += f" {args.pattern}"
@@ -167,6 +172,7 @@ parser_test = subparsers.add_parser('test')
 parser_test.set_defaults(func=test)
 parser_test.add_argument("-f", "--functional", dest="functional", action="store_true", help="Run functional tests instead")
 parser_test.add_argument("-p", "--pattern", help="Test pattern to pass to sbt (e.g. **MyCoolSpec)")
+parser_test.add_argument("-a", "--all", action="store_true", help="Run all tests. All other args are ignored.")
 
 parser_postgres_shell = subparsers.add_parser('postgres-shell')
 parser_postgres_shell.set_defaults(func=postgres_shell)
