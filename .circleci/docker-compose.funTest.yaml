@@ -1,7 +1,7 @@
 version: "3.7"
 services:
   funtest:
-    image: vitorqb23/rappelle-be-ci:latest
+    image: vitorqb23/rappelle-be-ci:2
     volumes:
       - ${HOME}/project:/root/project
     entrypoint: /bin/bash

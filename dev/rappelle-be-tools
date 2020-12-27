@@ -39,7 +39,7 @@ class Runner():
         self.run([*cmd, *args], self.deploy_dir)
 
     def run_sbt(self, args):
-        cmd = ["sbt"]
+        cmd = ["coursier", "launch", "sbt", "--"]
         self.run([*cmd, *args], self.cwd)
 
 
