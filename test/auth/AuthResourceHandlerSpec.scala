@@ -59,11 +59,13 @@ class AuthResourceHandlerSpec
     "fail if user already exists" in {
       WithTestContext() { c =>
         val requestInput = CreateUserRequestInput(c.user.email, "pass")
-        c.userRepo.read(c.user.email) shouldReturn Future.successful(Some(c.user))
+        c.userRepo.read(c.user.email) shouldReturn Future.successful(
+          Some(c.user)
+        )
 
         val result = c.handler.createUser(requestInput).failed.futureValue
 
-        result mustBe a [UserAlreadyExists]
+        result mustBe a[UserAlreadyExists]
         c.userRepo.create(*) wasCalled 0.times
       }
     }

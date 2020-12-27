@@ -68,7 +68,9 @@ class AuthFunSpec extends PlaySpec with ScalaFutures {
         val newUserPass = "newUserPass"
         val createResult = c
           .request(s"/api/auth/user")
-          .withBody(Json.obj("email" -> newUserEmail, "password" -> newUserPass))
+          .withBody(
+            Json.obj("email" -> newUserEmail, "password" -> newUserPass)
+          )
           .execute("POST")
           .futureValue
         createResult.status must equal(201)
@@ -80,7 +82,9 @@ class AuthFunSpec extends PlaySpec with ScalaFutures {
 
         val tokenResult = c
           .request("/api/auth/token")
-          .withBody(Json.obj("email" -> newUserEmail, "password" -> newUserPass))
+          .withBody(
+            Json.obj("email" -> newUserEmail, "password" -> newUserPass)
+          )
           .execute("POST")
           .futureValue
         tokenResult.status must equal(200)

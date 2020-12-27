@@ -25,8 +25,10 @@ class ServiceModule extends AbstractModule {
   @com.google.inject.Singleton
   def clock(config: Configuration): ClockLike =
     config.getOptional[String]("services.clock.type") match {
-      case None | Some("Clock") =>
+      case None | Some("Clock") => {
+        logger.info(f"Providing Clock")
         new Clock()
+      }
       case Some("FakeClock") => {
         val now = DateTime.parse(config.get[String]("services.clock.now"))
         logger.info(f"Providing FakeClock($now)")

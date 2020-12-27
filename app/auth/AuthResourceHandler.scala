@@ -36,7 +36,7 @@ class AuthResourceHandler @Inject() (
   def createUser(requestInput: CreateUserRequestInput): Future[User] = {
     val request = CreateUserRequest(requestInput.email, requestInput.password)
     userRepo.read(request.email).flatMap {
-      case None => userRepo.create(request)
+      case None    => userRepo.create(request)
       case Some(_) => Future.failed(new UserAlreadyExists)
     }
   }

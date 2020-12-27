@@ -26,7 +26,7 @@ class AuthModule extends AbstractModule {
   ): AuthTokenRepositoryLike = {
     config.getOptional[String]("auth.tokenRepository.type") match {
       case None | Some("AuthTokenRepository") => {
-        logger.info("Providing with AuthTokenRepository")
+        logger.info("Providing AuthTokenRepository")
         new AuthTokenRepository(db, idGenerator)
       }
       case Some("DummyAuthTokenRepository") => {
@@ -59,8 +59,10 @@ class AuthModule extends AbstractModule {
       config: Configuration
   ): UserRepositoryLike =
     config.getOptional[String]("auth.userRepository.type") match {
-      case None | Some("UserRepository") =>
+      case None | Some("UserRepository") => {
+        logger.info(f"Providing UserRepository")
         new UserRepository(db, idGenerator, hashSvc)(ec)
+      }
       case Some("FakeUserRepository") => {
         val id = config.get[Int]("auth.fakeUser.id")
         val email = config.get[String]("auth.fakeUser.email")
@@ -68,9 +70,7 @@ class AuthModule extends AbstractModule {
         val request = CreateUserRequest(email, password)
         val repo = new FakeUserRepository
         repo.create(request, id)
-        logger.info(
-          f"Providing with FakeUserRepository.create($request, $id)"
-        )
+        logger.info(f"Providing FakeUserRepository.create($request, $id)")
         repo
       }
       case _ =>
@@ -84,8 +84,10 @@ class AuthModule extends AbstractModule {
       clock: ClockLike
   ): TokenGeneratorLike =
     config.getOptional[String]("auth.tokenGenerator.type") match {
-      case None | Some("TokenGenerator") =>
+      case None | Some("TokenGenerator") => {
+        logger.info("Providing TokenGenerator")
         new TokenGenerator(clock)
+      }
       case Some("FakeTokenGenerator") => {
         val value = config.get[String]("auth.fakeToken.value")
         val expiresAt =
