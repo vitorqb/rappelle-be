@@ -8,7 +8,34 @@ import play.api.mvc.Results
 import scala.concurrent.ExecutionContext
 import play.api.Logger
 import services.ClockLike
+import play.api.libs.json.Json
 
+/** UserExtractResult are all possible results for an user extraction from request.
+  */
+sealed trait UserExtractResult {
+  val logMsg: String
+}
+case class SuccessUserExtractResult(user: User) extends UserExtractResult {
+  val logMsg = f"Found user ${user.email}"
+}
+case class MissingUserExtractResult(userId: Int) extends UserExtractResult {
+  val logMsg = f"Could not find user with id ${userId}"
+}
+case class ExpiredTokenExtractResult(token: Token) extends UserExtractResult {
+  val logMsg = f"Expired token ${token}"
+}
+case class InvalidTokenExtractResult() extends UserExtractResult {
+  val logMsg = f"Invalid token value."
+}
+case class InvalidHeaderExtractResult() extends UserExtractResult {
+  val logMsg = f"Invalid token value."
+}
+case class MissingHeaderExtractResult() extends UserExtractResult {
+  val logMsg = f"Missing authentication header"
+}
+
+/** Service responsible for extracting an user from a request, validating the token.
+  */
 trait RequestUserExtractorLike extends Results {
 
   implicit val ec: ExecutionContext
@@ -17,12 +44,21 @@ trait RequestUserExtractorLike extends Results {
       block: User => Future[Result]
   ): Future[Result] = {
     extractUser(request).flatMap {
-      case None    => Future.successful(Unauthorized)
-      case Some(x) => block(x)
+      case SuccessUserExtractResult(u) =>
+        block(u)
+      case MissingUserExtractResult(_) | ExpiredTokenExtractResult(_) |
+          InvalidTokenExtractResult() =>
+        Future.successful(Unauthorized(Json.obj("msg" -> "Invalid token")))
+      case InvalidHeaderExtractResult() | MissingHeaderExtractResult() =>
+        Future.successful(
+          Unauthorized(
+            Json.obj("msg" -> "Invalid authentication header format")
+          )
+        )
     }
   }
 
-  def extractUser(request: Request[AnyContent]): Future[Option[User]]
+  def extractUser(request: Request[AnyContent]): Future[UserExtractResult]
 
 }
 
@@ -37,42 +73,31 @@ class RequestUserExtractor(
   protected val logger = Logger(getClass())
   protected val TokenRegex = "^Bearer (.*)$".r
 
-  override def extractUser(request: Request[AnyContent]): Future[Option[User]] =
-    request.headers.get("Authorization") match {
+  override def extractUser(
+      request: Request[AnyContent]
+  ): Future[UserExtractResult] = {
+    val result = request.headers.get("Authorization") match {
       case Some(header) =>
         header match {
           case TokenRegex(tokenValue) => {
             tokenRepo.read(tokenValue).flatMap {
               case Some(token) if token.isValid(clock.now()) =>
                 userRepo.read(token.userId).map {
-                  case Some(user) => {
-                    logger.info(s"Found user: ${user}")
-                    Some(user)
-                  }
-                  case None => {
-                    logger.info(s"Could not find user with id ${token.userId}")
-                    None
-                  }
+                  case Some(user) => SuccessUserExtractResult(user)
+                  case None       => MissingUserExtractResult(token.userId)
                 }
               case Some(token) =>
-                logger.info("Found expired token.")
-                Future.successful(None)
-              case None => {
-                logger.info("Could not locate token for request")
-                Future.successful(None)
-              }
+                Future.successful(ExpiredTokenExtractResult(token))
+              case None => Future.successful(InvalidTokenExtractResult())
             }
           }
-          case _ => {
-            logger.info("Received invalid authentication header")
-            Future.successful(None)
-          }
+          case _ => Future.successful(InvalidHeaderExtractResult())
         }
-      case None => {
-        logger.info("Received missing authentication header")
-        Future.successful(None)
-      }
+      case None => Future.successful(MissingHeaderExtractResult())
     }
+    result.foreach(r => logger.info(r.logMsg))
+    result
+  }
 }
 
 class FakeRequestUserExtractor(user: Option[User])(implicit
@@ -81,7 +106,13 @@ class FakeRequestUserExtractor(user: Option[User])(implicit
 
   protected val logger = Logger(getClass())
 
-  override def extractUser(request: Request[AnyContent]): Future[Option[User]] =
-    Future.successful(user)
+  override def extractUser(
+      request: Request[AnyContent]
+  ): Future[UserExtractResult] =
+    Future.successful(
+      user
+        .map(SuccessUserExtractResult.apply)
+        .getOrElse(InvalidTokenExtractResult())
+    )
 
 }

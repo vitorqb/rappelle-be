@@ -9,6 +9,7 @@ import play.api.test.FakeRequest
 import org.scalatest.concurrent.ScalaFutures
 import play.api.mvc.Results
 import services.ClockLike
+import play.api.libs.json.Json
 
 class RequestUserExtractorSpec
     extends PlaySpec
@@ -30,7 +31,7 @@ class RequestUserExtractorSpec
           "Authorization" -> s"Bearer ${c.token.value}"
         )
         val result = c.extractor.extractUser(request).futureValue
-        result must equal(Some(c.user))
+        result must equal(SuccessUserExtractResult(c.user))
       }
     }
 
@@ -41,7 +42,7 @@ class RequestUserExtractorSpec
         val request =
           FakeRequest().withHeaders("Authorization" -> s"Bearer WRONG_TOKEN")
         val result = c.extractor.extractUser(request).futureValue
-        result must equal(None)
+        result must equal(InvalidTokenExtractResult())
       }
     }
 
@@ -56,7 +57,7 @@ class RequestUserExtractorSpec
             "Authorization" -> s"Bearer ${c.token.value}"
           )
         val result = c.extractor.extractUser(request).futureValue
-        result must equal(None)
+        result must equal(MissingUserExtractResult(c.token.userId))
       }
     }
 
@@ -64,7 +65,7 @@ class RequestUserExtractorSpec
       WithTestContext() { c =>
         val request = FakeRequest()
         val result = c.extractor.extractUser(request).futureValue
-        result must equal(None)
+        result must equal(MissingHeaderExtractResult())
       }
     }
 
@@ -77,7 +78,7 @@ class RequestUserExtractorSpec
         val request =
           FakeRequest().withHeaders("Authorization" -> s"FOO ${c.token.value}")
         val result = c.extractor.extractUser(request).futureValue
-        result must equal(None)
+        result must equal(InvalidHeaderExtractResult())
       }
     }
 
@@ -93,18 +94,22 @@ class RequestUserExtractorSpec
             "Authorization" -> s"Bearer ${c.token.value}"
           )
         val result = c.extractor.extractUser(request).futureValue
-        result must equal(None)
+        result must equal(ExpiredTokenExtractResult(c.token))
       }
     }
   }
 
   "withUser" should {
 
-    "return unauthorized if no user" in {
+    "return unauthorized if no token" in {
       WithTestContext() { c =>
         val result =
           c.extractor.withUser(FakeRequest())(_ => Future.successful(Ok))
-        result.futureValue must equal(Unauthorized)
+        result.futureValue must equal(
+          Unauthorized(
+            Json.obj("msg" -> "Invalid authentication header format")
+          )
+        )
       }
     }
 
