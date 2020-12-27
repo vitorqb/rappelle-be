@@ -9,10 +9,14 @@ import scala.concurrent.ExecutionContext
 import services.PasswordHashSvcLike
 import services.UniqueIdGeneratorLike
 import services.ClockLike
+import play.api.Logger
 
 class AuthModule extends AbstractModule {
 
+  val logger = Logger(getClass)
+
   @Provides
+  @com.google.inject.Singleton
   def authTokenRepositoryLike(
       config: Configuration,
       db: Database,
@@ -21,8 +25,10 @@ class AuthModule extends AbstractModule {
       ec: ExecutionContext
   ): AuthTokenRepositoryLike = {
     config.getOptional[String]("auth.tokenRepository.type") match {
-      case None | Some("AuthTokenRepository") =>
+      case None | Some("AuthTokenRepository") => {
+        logger.info("Providing with AuthTokenRepository")
         new AuthTokenRepository(db, idGenerator)
+      }
       case Some("DummyAuthTokenRepository") => {
         val id = config.get[Int]("auth.fakeUser.id")
         val email = config.get[String]("auth.fakeUser.email")
@@ -31,6 +37,9 @@ class AuthModule extends AbstractModule {
         val expiresAt = config.get[String]("auth.fakeToken.expiresAt")
         val user = User(id, email)
         val token = Token(accessToken, DateTime.parse(expiresAt), id)
+        logger.info(
+          f"Providing with DummyAuthTokenRepository($user, $password, $token)"
+        )
         new DummyAuthTokenRepository(user, password, token)
       }
       case Some(x) =>
@@ -41,6 +50,7 @@ class AuthModule extends AbstractModule {
   }
 
   @Provides
+  @com.google.inject.Singleton
   def userRepositoryLike(
       db: Database,
       idGenerator: UniqueIdGeneratorLike,
@@ -58,6 +68,9 @@ class AuthModule extends AbstractModule {
         val request = CreateUserRequest(email, password)
         val repo = new FakeUserRepository
         repo.create(request, id)
+        logger.info(
+          f"Providing with FakeUserRepository.create($request, $id)"
+        )
         repo
       }
       case _ =>
@@ -65,6 +78,7 @@ class AuthModule extends AbstractModule {
     }
 
   @Provides
+  @com.google.inject.Singleton
   def tokenGeneratorLike(
       config: Configuration,
       clock: ClockLike
@@ -76,6 +90,7 @@ class AuthModule extends AbstractModule {
         val value = config.get[String]("auth.fakeToken.value")
         val expiresAt =
           DateTime.parse(config.get[String]("auth.fakeToken.expiresAt"))
+        logger.info(f"Providing with FakeTokenGenerator($value, $expiresAt)")
         new FakeTokenGenerator(value, expiresAt)
       }
       case _ =>
@@ -83,6 +98,7 @@ class AuthModule extends AbstractModule {
     }
 
   @Provides
+  @com.google.inject.Singleton
   def requestUserExtractorLike(
       userRepo: UserRepositoryLike,
       tokenRepo: AuthTokenRepositoryLike,

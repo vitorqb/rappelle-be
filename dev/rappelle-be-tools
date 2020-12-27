@@ -116,7 +116,7 @@ def docker_compose(r, args):
 
 
 def run(r, args):
-    cmd = "run -Dconfig.resource=application.local.conf"
+    cmd = "run -Dconfig.resource=application.dev.conf"
     if args.port:
         cmd += f" {args.port}"
     r.run_sbt([cmd])
