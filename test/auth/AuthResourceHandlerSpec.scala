@@ -2,6 +2,7 @@ package auth
 
 import org.scalatestplus.play.PlaySpec
 import org.mockito.IdiomaticMockito
+import org.mockito.ArgumentMatchersSugar
 import org.joda.time.DateTime
 import scala.concurrent.Future
 import org.scalatest.concurrent.ScalaFutures
@@ -10,32 +11,86 @@ import scala.concurrent.ExecutionContext
 class AuthResourceHandlerSpec
     extends PlaySpec
     with IdiomaticMockito
+    with ArgumentMatchersSugar
     with ScalaFutures {
 
   implicit val ec = ExecutionContext.global
 
-  "create" should {
+  "createToken" should {
 
     "send request to tokenRepo and return the result" in {
+      WithTestContext() { c =>
+        c.userRepo.read(c.user.email) shouldReturn Future.successful(
+          Some(c.user)
+        )
+        val input = CreateTokenRequestInput(c.user.email, "pass")
+        val request =
+          CreateTokenRequest(c.user, c.expiresAt, "sometoken")
+        val token = Token(request.value, request.expiresAt, c.user.id)
+        c.tokenRepo.create(request) shouldReturn Future.successful(token)
+
+        val result = c.handler.createToken(input)
+
+        result.futureValue mustEqual token
+        c.tokenRepo.create(request) wasCalled once
+      }
+    }
+
+  }
+
+  "createUser" should {
+
+    "send request to userRepo and return the result" in {
+      WithTestContext() { c =>
+        val requestInput = CreateUserRequestInput("a@b.c", "pass")
+        val request =
+          CreateUserRequest(requestInput.email, requestInput.password)
+        val user = User(999, request.email)
+        c.userRepo.read(request.email) shouldReturn Future.successful(None)
+        c.userRepo.create(request) shouldReturn Future.successful(user)
+
+        val result = c.handler.createUser(requestInput).futureValue
+
+        result must equal(user)
+        c.userRepo.create(request) wasCalled once
+      }
+    }
+
+    "fail if user already exists" in {
+      WithTestContext() { c =>
+        val requestInput = CreateUserRequestInput(c.user.email, "pass")
+        c.userRepo.read(c.user.email) shouldReturn Future.successful(
+          Some(c.user)
+        )
+
+        val result = c.handler.createUser(requestInput).failed.futureValue
+
+        result mustBe a[UserAlreadyExists]
+        c.userRepo.create(*) wasCalled 0.times
+      }
+    }
+
+  }
+
+  case class TestContext(
+      user: User,
+      userRepo: UserRepositoryLike,
+      tokenRepo: AuthTokenRepositoryLike,
+      expiresAt: DateTime,
+      handler: AuthResourceHandler
+  )
+
+  object WithTestContext {
+    def apply()(block: TestContext => Any): Any = {
       val user = User(1, "a@b.c")
       val userRepo = mock[UserRepositoryLike]
-      userRepo.read(user.email) shouldReturn Future.successful(Some(user))
       val tokenRepo = mock[AuthTokenRepositoryLike]
       val expiresAt = DateTime.parse("2021-12-25")
       val tokenGenerator = new FakeTokenGenerator("sometoken", expiresAt)
       val handler = new AuthResourceHandler(tokenRepo, userRepo, tokenGenerator)
-      val input = CreateTokenRequestInput(user.email, "pass")
-      val request =
-        CreateTokenRequest(user, expiresAt, "sometoken")
-      val token = Token(request.value, request.expiresAt, user.id)
-      tokenRepo.create(request) shouldReturn Future.successful(token)
-
-      val result = handler.createToken(input)
-
-      result.futureValue mustEqual token
-      tokenRepo.create(request) wasCalled once
+      val context = TestContext(user, userRepo, tokenRepo, expiresAt, handler)
+      block(context)
     }
-
   }
 
 }

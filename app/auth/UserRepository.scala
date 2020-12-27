@@ -73,13 +73,16 @@ class FakeUserRepository extends UserRepositoryLike {
 
   var users: Seq[(User, String)] = Seq()
 
-  override def create(request: CreateUserRequest): Future[User] =
-    create(request, users.map(_._1.id).max + 1)
-
-  def create(request: CreateUserRequest, id: Int): Future[User] = {
+  def create(request: CreateUserRequest, id: Int) = {
     val user = User(id, request.email)
     users ++= Seq((user, request.password))
     Future.successful(user)
+
+  }
+
+  def create(request: CreateUserRequest): Future[User] = {
+    val id = users.map(_._1).map(_.id).maxOption.getOrElse(0) + 1
+    create(request, id)
   }
 
   override def read(email: String): Future[Option[User]] =
@@ -98,9 +101,7 @@ class FakeUserRepository extends UserRepositoryLike {
     }
 
 }
-
 object UserSqlParsers {
-
   import anorm.SqlParser._
   import anorm._
 

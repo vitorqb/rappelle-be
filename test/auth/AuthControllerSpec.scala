@@ -66,6 +66,41 @@ class AuthControllerSpec
     }
   }
 
+  "postUser" should {
+    "return created user" in {
+      WithTestContext() { c =>
+        val createUserReqInput =
+          CreateUserRequestInput("new@user.com", "new_password")
+        val user = User(1, createUserReqInput.email)
+        c.resourceHandler.createUser(createUserReqInput) shouldReturn Future
+          .successful(user)
+        val body = Json.toJson(createUserReqInput)
+        val request =
+          FakeRequest(routes.AuthController.postUser()).withBody(body)
+        val result = c.controller.postUser()(request)
+        Helpers.status(result) must equal(CREATED)
+        Helpers.contentAsJson(result) must equal(
+          Json.obj("id" -> 1, "email" -> createUserReqInput.email)
+        )
+      }
+    }
+    "returns error if user already exists" in {
+      WithTestContext() { c =>
+        val createUserReqInput = CreateUserRequestInput(c.user.email, "pass")
+        c.resourceHandler.createUser(createUserReqInput) shouldReturn Future
+          .failed(new UserAlreadyExists)
+        val body = Json.toJson(createUserReqInput)
+        val request =
+          FakeRequest(routes.AuthController.postUser()).withBody(body)
+        val result = c.controller.postUser()(request)
+        Helpers.status(result) must equal(BAD_REQUEST)
+        Helpers.contentAsJson(result) must equal(
+          Json.obj("msg" -> "An user with this email already exists.")
+        )
+      }
+    }
+  }
+
   case class TestContext(
       createTokenRequest: CreateTokenRequestInput,
       resourceHandler: AuthResourceHandlerLike,

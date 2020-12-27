@@ -6,3 +6,4 @@
 # An example controller showing a sample home page
 POST    /api/auth/token             auth.AuthController.postToken()
 GET     /api/auth/ping              auth.AuthController.ping()
+POST    /api/auth/user              auth.AuthController.postUser()
