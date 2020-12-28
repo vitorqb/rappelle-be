@@ -36,5 +36,15 @@ object AuthJsonSerializers {
 
   implicit val userWrites: Writes[User] = (
     (JsPath \ "id").write[Int] and (JsPath \ "email").write[String]
-  )(unlift(User.unapply))
+  )((user: User) => (user.id, user.email))
+
+  implicit val createEmailConfirmationRequestWrites
+      : Writes[EmailConfirmationRequest] = (
+    (JsPath \ "key").write[String] and (JsPath \ "key").write[String]
+  )(r => (r.key, r.key))
+
+  implicit val createEmailConfirmationRequestReads
+      : Reads[EmailConfirmationRequest] = (
+    (JsPath \ "key").read[String] and (JsPath \ "key").read[String]
+  )((key, _) => EmailConfirmationRequest(key))
 }

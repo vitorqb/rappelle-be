@@ -7,6 +7,7 @@ import services.UniqueIdGeneratorLike
 import scala.concurrent.ExecutionContext
 import services.PasswordHashSvcLike
 import anorm.SqlParser
+import play.api.Logger
 
 /** A trait responsible for persisting users.
   */
@@ -14,6 +15,7 @@ trait UserRepositoryLike {
   def create(request: CreateUserRequest): Future[User]
   def read(email: String): Future[Option[User]]
   def read(id: Int): Future[Option[User]]
+  def update(request: UpdateUserRequest): Future[Option[User]]
   def passwordIsValid(user: User, password: String): Future[Boolean]
 }
 
@@ -26,11 +28,15 @@ class UserRepository(
 
   private val table = "users"
 
+  private val logger = Logger(getClass())
+
   override def create(request: CreateUserRequest): Future[User] = Future {
     val id = idGenerator.gen()
+    logger.info(f"Handling create with id $id and email ${request.email}")
     db.withConnection { implicit c =>
       SQL(
-        s"INSERT INTO ${table} (id, email, passwordHash) VALUES ({id}, {email}, {passwordHash})"
+        s"""INSERT INTO ${table} (id, email, passwordHash, emailConfirmed) 
+            VALUES ({id}, {email}, {passwordHash}, false)"""
       )
         .on(
           "id" -> id,
@@ -43,6 +49,7 @@ class UserRepository(
   }.flatten
 
   override def read(email: String): Future[Option[User]] = Future {
+    logger.info(f"Handling read with email $email")
     db.withConnection { implicit c =>
       SQL(s"SELECT * FROM ${table} WHERE email={email}")
         .on("email" -> email)
@@ -51,9 +58,46 @@ class UserRepository(
     }
   }
 
-  def read(id: Int): Future[Option[User]] = ???
+  def read(id: Int): Future[Option[User]] = Future {
+    logger.info(f"Handling read with id $id")
+    db.withConnection { implicit c =>
+      SQL(s"SELECT * FROM ${table} WHERE id={id}")
+        .on("id" -> id)
+        .as(UserSqlParsers.userParser.*)
+        .headOption
+    }
+  }
 
-  override def passwordIsValid(user: User, password: String): Future[Boolean] =
+  override def update(request: UpdateUserRequest): Future[Option[User]] = {
+    logger.info(f"Handling update for user with id ${request.userId}")
+    implicit val connection = db.getConnection(false)
+    read(request.userId).flatMap {
+      case None => Future.successful(None)
+      case Some(user) => {
+        SQL(
+          s"""UPDATE ${table}
+                SET emailConfirmed={emailConfirmed}
+                WHERE id={id}"""
+        )
+          .on(
+            "emailConfirmed" -> request.emailConfirmed
+              .getOrElse(user.emailConfirmed),
+            "id" -> request.userId
+          )
+          .execute()
+        connection.commit()
+        read(request.userId)
+      }
+    } andThen { case _ =>
+      connection.close()
+    }
+  }
+
+  override def passwordIsValid(
+      user: User,
+      password: String
+  ): Future[Boolean] = {
+    logger.info(f"Checking password for user $user")
     Future {
       db.withConnection { implicit c =>
         SQL(s"SELECT passwordHash FROM ${table} WHERE id={id}")
@@ -65,16 +109,19 @@ class UserRepository(
         }
       }
     }
+  }
 }
 
 /** A fake implementation of an user repository that keep an in-memory map of users.
   */
 class FakeUserRepository extends UserRepositoryLike {
 
+  implicit val ec = ExecutionContext.global
+
   var users: Seq[(User, String)] = Seq()
 
-  def create(request: CreateUserRequest, id: Int) = {
-    val user = User(id, request.email)
+  def create(request: CreateUserRequest, id: Int, emailConfirmed: Boolean) = {
+    val user = User(id, request.email, emailConfirmed)
     users ++= Seq((user, request.password))
     Future.successful(user)
 
@@ -82,7 +129,7 @@ class FakeUserRepository extends UserRepositoryLike {
 
   def create(request: CreateUserRequest): Future[User] = {
     val id = users.map(_._1).map(_.id).maxOption.getOrElse(0) + 1
-    create(request, id)
+    create(request, id, false)
   }
 
   override def read(email: String): Future[Option[User]] =
@@ -90,6 +137,19 @@ class FakeUserRepository extends UserRepositoryLike {
 
   override def read(id: Int): Future[Option[User]] =
     Future.successful(users.map(_._1).find(_.id == id))
+
+  override def update(request: UpdateUserRequest): Future[Option[User]] =
+    read(request.userId).flatMap {
+      case Some(user) => {
+        val index = users.indexWhere { case (u, _) => u == user }
+        val newUser = user.copy(emailConfirmed =
+          request.emailConfirmed.getOrElse(user.emailConfirmed)
+        )
+        users.updated(index, newUser)
+        read(request.userId)
+      }
+      case None => Future.successful(None)
+    }
 
   override def passwordIsValid(user: User, password: String): Future[Boolean] =
     Future.successful {
@@ -106,8 +166,9 @@ object UserSqlParsers {
   import anorm._
 
   val userParser: RowParser[User] = {
-    (get[Int]("id") ~ get[String]("email")) map { case id ~ email =>
-      User(id, email)
-    }
+    (get[Int]("id") ~ get[String]("email") ~ get[Boolean]("emailConfirmed"))
+      .map { case id ~ email ~ emailConfirmed =>
+        User(id, email, emailConfirmed)
+      }
   }
 }

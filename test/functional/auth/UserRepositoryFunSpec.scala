@@ -17,15 +17,54 @@ class UserRepositoryFunSpec extends PlaySpec with ScalaFutures {
     PatienceConfig(timeout = Span(2, Seconds), interval = Span(5, Millis))
   implicit val ec = ExecutionContext.global
 
-  "create and read an user" in {
+  "create and read an user with email" in {
     WithTestContext() { c =>
       c.repo.create(c.request).futureValue
       val result = c.repo.read(c.request.email).futureValue.get
-      result.email mustEqual c.request.email
-      result.id must equal(1)
+      result must equal(User(1, c.request.email, emailConfirmed = false))
     }
   }
 
+  "create and read an user with id" in {
+    WithTestContext() { c =>
+      c.repo.create(c.request).futureValue
+      val expectedId = c.idGenerator.lastVal()
+      val result = c.repo.read(expectedId).futureValue.get
+      result must equal(
+        User(expectedId, c.request.email, emailConfirmed = false)
+      )
+    }
+  }
+
+  "create and update an user" in {
+    WithTestContext() { c =>
+      val createdUser = c.repo.create(c.request).futureValue
+      val updateRequest =
+        UpdateUserRequest(createdUser.id, emailConfirmed = Some(true))
+      val updatedUser = c.repo.update(updateRequest).futureValue
+      val expected = createdUser.copy(emailConfirmed = true)
+      updatedUser must equal(Some(expected))
+      c.repo.read(updateRequest.userId).futureValue must equal(Some(expected))
+    }
+  }
+
+  "create and update without any change" in {
+    WithTestContext() { c =>
+      val createdUser = c.repo.create(c.request).futureValue
+      val updateRequest = UpdateUserRequest(createdUser.id)
+      val updatedUser = c.repo.update(updateRequest).futureValue
+      updatedUser must equal(Some(createdUser))
+      c.repo.read(updateRequest.userId).futureValue must equal(
+        Some(createdUser)
+      )
+    }
+  }
+
+  "update an user that does not exist" in {
+    WithTestContext() { c =>
+      c.repo.update(UpdateUserRequest(1)).futureValue must equal(None)
+    }
+  }
   "return None if no user" in {
     WithTestContext() { c =>
       c.repo.read("foo").futureValue must equal(None)
@@ -42,7 +81,11 @@ class UserRepositoryFunSpec extends PlaySpec with ScalaFutures {
     }
   }
 
-  case class TestContext(request: CreateUserRequest, repo: UserRepositoryLike)
+  case class TestContext(
+      request: CreateUserRequest,
+      idGenerator: FakeUniqueIdGenerator,
+      repo: UserRepositoryLike
+  )
 
   object WithTestContext {
     val request = CreateUserRequest("a@b.c", "password")
@@ -51,9 +94,13 @@ class UserRepositoryFunSpec extends PlaySpec with ScalaFutures {
         WithTestDb(app) { db =>
           val idGenerator = new FakeUniqueIdGenerator
           val hashSvc = new FakePasswordHashSvc
-          val repo = new UserRepository(db, idGenerator, hashSvc)
-          val context = TestContext(request, repo)
-          block(context)
+          block(
+            TestContext(
+              request,
+              idGenerator,
+              repo = new UserRepository(db, idGenerator, hashSvc)
+            )
+          )
         }
       }
     }

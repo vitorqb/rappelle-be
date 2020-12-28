@@ -7,6 +7,7 @@ import anorm.JodaParameterMetaData._
 import org.joda.time.DateTime
 import scala.concurrent.ExecutionContext
 import services.UniqueIdGeneratorLike
+import play.api.Logger
 
 /** Trait for the repository of authentication tokens.
   */
@@ -30,9 +31,12 @@ class AuthTokenRepository(
 )(implicit val ec: ExecutionContext)
     extends AuthTokenRepositoryLike {
 
+  val logger = Logger(getClass())
+
   final protected val table = "authTokens"
 
   def create(request: CreateTokenRequest): Future[Token] = {
+    logger.info(f"Creating token for user ${request.user.email}")
     Future {
       db.withConnection { implicit t =>
         SQL(

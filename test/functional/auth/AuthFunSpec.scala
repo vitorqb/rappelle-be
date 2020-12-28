@@ -21,7 +21,7 @@ class AuthFunSpec extends PlaySpec with ScalaFutures {
   "Token flow" should {
 
     "get a token for an user" in {
-      WithUnloggedUserContext { c =>
+      WithUnloggedUserContext() { c =>
         val postResult = c
           .request(s"/api/auth/token")
           .withBody(Json.obj("email" -> c.email, "password" -> c.password))
@@ -38,7 +38,7 @@ class AuthFunSpec extends PlaySpec with ScalaFutures {
     }
 
     "get a 200 on the ping endpoint if logged in" in {
-      WithUnloggedUserContext { c =>
+      WithUnloggedUserContext() { c =>
         val getResult = c
           .request(s"/api/auth/ping")
           .withHttpHeaders("Authorization" -> s"Bearer ${c.token}")
@@ -48,8 +48,22 @@ class AuthFunSpec extends PlaySpec with ScalaFutures {
       }
     }
 
+    "get a 403 on the ping endpoint if email not confirmed" in {
+      WithUnloggedUserContext(
+        _.updated("auth.fakeUser.emailConfirmed", false)
+      ) { c =>
+        val getResult = c
+          .request(s"/api/auth/ping")
+          .withHttpHeaders("Authorization" -> s"Bearer ${c.token}")
+          .execute()
+          .futureValue
+        getResult.status mustBe 403
+        getResult.json must equal(Json.obj("msg" -> "User is not active."))
+      }
+    }
+
     "get a 401 if invalid token" in {
-      WithUnloggedUserContext { c =>
+      WithUnloggedUserContext() { c =>
         val getResult = c
           .request("/api/auth/ping")
           .withHttpHeaders("Authorization" -> s"Bearer FALSETOKEN")
@@ -62,8 +76,8 @@ class AuthFunSpec extends PlaySpec with ScalaFutures {
 
   "Create user flow" should {
 
-    "create an user, get a token, and ping" in {
-      WithUnloggedUserContext { c =>
+    "create an user, confirm email, get a token, and ping" in {
+      WithUnloggedUserContext() { c =>
         val newUserEmail = "new@user.email"
         val newUserPass = "newUserPass"
         val createResult = c
@@ -79,6 +93,13 @@ class AuthFunSpec extends PlaySpec with ScalaFutures {
         createResult.json must equal(
           Json.obj("id" -> expectedId, "email" -> newUserEmail)
         )
+
+        val confirmEmailResult = c
+          .request("/api/auth/emailConfirmation")
+          .withBody(Json.obj("key" -> c.confirmationKey))
+          .execute("POST")
+          .futureValue
+        confirmEmailResult.status must equal(204)
 
         val tokenResult = c
           .request("/api/auth/token")
@@ -109,6 +130,7 @@ case class UnloggedUserContext(
     password: String,
     token: String,
     expiresAt: String,
+    confirmationKey: String,
     id: Int
 ) {
   def request(url: String) =
@@ -123,20 +145,38 @@ object WithUnloggedUserContext {
   lazy val token = "TOKEN"
   lazy val expiresAt = "2020-10-11T00:00:00.000Z"
   lazy val now = "2020-01-11T00:00:00.000Z"
+  lazy val confirmationKey = "confirmationkey"
   lazy val appConf = Map(
     "auth.fakeUser.id" -> id,
     "auth.fakeUser.email" -> email,
     "auth.fakeUser.password" -> password,
+    "auth.fakeUser.emailConfirmed" -> true,
     "auth.fakeToken.value" -> token,
     "auth.fakeToken.expiresAt" -> expiresAt,
+    "auth.fakeEmailConfirmationSvc.confirmationKey" -> confirmationKey,
+    "auth.fakeEmailConfirmationSvc.userId" -> id,
     "services.clock.now" -> now
   )
 
-  def apply(block: UnloggedUserContext => Any) = {
-    WithTestApp(appConf) { app =>
+  def apply()(block: UnloggedUserContext => Any): Any = apply(identity)(block)
+
+  def apply(
+      configFn: Map[String, Any] => Map[String, Any]
+  )(
+      block: UnloggedUserContext => Any
+  ): Any = {
+    WithTestApp(configFn(appConf)) { app =>
       Helpers.running(TestServer(testServerPort, app)) {
         val context =
-          UnloggedUserContext(app, email, password, token, expiresAt, id)
+          UnloggedUserContext(
+            app,
+            email,
+            password,
+            token,
+            expiresAt,
+            confirmationKey,
+            id
+          )
         block(context)
       }
     }

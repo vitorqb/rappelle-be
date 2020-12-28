@@ -132,8 +132,6 @@ def curl(r, args):
     cmd = [
         "curl",
         "-H",
-        "Authorization: Bearer faketoken",
-        "-H",
         "Content-Type: application/json",
         *args.command[:-1],
         url

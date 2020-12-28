@@ -71,7 +71,7 @@ class AuthControllerSpec
       WithTestContext() { c =>
         val createUserReqInput =
           CreateUserRequestInput("new@user.com", "new_password")
-        val user = User(1, createUserReqInput.email)
+        val user = User(1, createUserReqInput.email, true)
         c.resourceHandler.createUser(createUserReqInput) shouldReturn Future
           .successful(user)
         val body = Json.toJson(createUserReqInput)
@@ -101,13 +101,75 @@ class AuthControllerSpec
     }
   }
 
+  "postEmailConfirmation" should {
+    "return 201 if email confirmation is a success" in {
+      WithTestContext() { c =>
+        val request = EmailConfirmationRequest(c.emailConfirmationKey)
+        val handlerResponse =
+          Future.successful(SuccessEmailConfirmationResult(c.user.id))
+        c.resourceHandler.confirmEmail(
+          request
+        ) shouldReturn handlerResponse
+        val body = Json.toJson(request)
+        val httpRequest =
+          FakeRequest(routes.AuthController.postEmailConfirmation())
+            .withBody(body)
+        val result = c.controller.postEmailConfirmation()(httpRequest)
+        Helpers.status(result) must equal(NO_CONTENT)
+      }
+    }
+    "return 400 if email confirmation fails because key has expired" in {
+      WithTestContext() { c =>
+        val request = EmailConfirmationRequest(c.emailConfirmationKey)
+        val handlerResponse =
+          Future.successful(ExpiredKeyEmailConfirmationResult())
+        c.resourceHandler.confirmEmail(
+          request
+        ) shouldReturn handlerResponse
+        val body = Json.toJson(request)
+        val httpRequest =
+          FakeRequest(routes.AuthController.postEmailConfirmation())
+            .withBody(body)
+        val result = c.controller.postEmailConfirmation()(httpRequest)
+        Helpers.status(result) must equal(BAD_REQUEST)
+        Helpers.contentAsJson(result) must equal(
+          Json.obj(
+            "msg" -> "The key has expired"
+          )
+        )
+      }
+    }
+    "return 400 if email confirmation fails because key is invalid" in {
+      WithTestContext() { c =>
+        val request = EmailConfirmationRequest(c.emailConfirmationKey)
+        val handlerResponse =
+          Future.successful(InvalidKeyEmailConfirmationResult())
+        c.resourceHandler.confirmEmail(
+          request
+        ) shouldReturn handlerResponse
+        val body = Json.toJson(request)
+        val httpRequest =
+          FakeRequest(routes.AuthController.postEmailConfirmation())
+            .withBody(body)
+        val result = c.controller.postEmailConfirmation()(httpRequest)
+        Helpers.status(result) must equal(BAD_REQUEST)
+        Helpers.contentAsJson(result) must equal(
+          Json.obj(
+            "msg" -> "The key is invalid"
+          )
+        )
+      }
+    }
+  }
+
   case class TestContext(
       createTokenRequest: CreateTokenRequestInput,
       resourceHandler: AuthResourceHandlerLike,
       token: Token,
       controller: AuthController,
       user: User,
-      requestUserExtractor: RequestUserExtractorLike
+      requestUserExtractor: RequestUserExtractorLike,
+      emailConfirmationKey: String
   )
 
   object WithTestContext {
@@ -116,8 +178,9 @@ class AuthControllerSpec
       apply((u: User) => Some(u))(block)
 
     def apply(userFn: User => Option[User])(block: TestContext => Any): Any = {
+      val emailConfirmationKey = "emailconfirmationkey"
       val email = "a@b.c"
-      val user = User(1, email)
+      val user = User(1, email, true)
       val password = "foo"
       val createTokenRequest = CreateTokenRequestInput(email, password)
       val token = Token("value", DateTime.parse("2020-01-01"), user.id)
@@ -135,7 +198,8 @@ class AuthControllerSpec
           token,
           controller,
           user,
-          requestUserExtractor
+          requestUserExtractor,
+          emailConfirmationKey
         )
       block(context)
     }

@@ -32,6 +32,7 @@ lazy val root = (project in file("."))
 
 //Dependencies and test dependencies
 libraryDependencies += guice
+libraryDependencies += ws
 libraryDependencies ++= Seq(evolutions, jdbc, "org.playframework.anorm" %% "anorm" % "2.6.4")
 libraryDependencies += "org.postgresql" % "postgresql" % "42.2.18"
 libraryDependencies += "joda-time" % "joda-time" % "2.10.8"

@@ -36,7 +36,7 @@ class AuthController @Inject() (
   def ping() = Action.async { implicit request =>
     WithAuthErrorHandling {
       requestUserExtractor.withUser(request) { user =>
-        logger.info(f"Ping for ${user}")
+        logger.info(f"Ping for ${user.email}")
         Future.successful(NoContent)
       }
     }
@@ -49,6 +49,30 @@ class AuthController @Inject() (
         resourceHandler.createUser(input).map(x => Created(Json.toJson(x)))
       }
     }
+  }
+
+  def postEmailConfirmation() = Action.async(parse.tolerantJson) {
+    implicit request =>
+      WithAuthErrorHandling {
+        parseRequestJson[EmailConfirmationRequest] { emailConfirmationRequest =>
+          resourceHandler
+            .confirmEmail(emailConfirmationRequest)
+            .map {
+              case SuccessEmailConfirmationResult(_) => {
+                logger.info("Success email confirmation")
+                NoContent: Result
+              }
+              case InvalidKeyEmailConfirmationResult() => {
+                logger.info("Invalid key for email confirmation")
+                BadRequest(Json.obj("msg" -> "The key is invalid"))
+              }
+              case ExpiredKeyEmailConfirmationResult() => {
+                logger.info("Expired key for email confirmation")
+                BadRequest(Json.obj("msg" -> "The key has expired"))
+              }
+            }
+        }
+      }
   }
 }
 

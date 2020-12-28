@@ -7,3 +7,4 @@
 POST    /api/auth/token             auth.AuthController.postToken()
 GET     /api/auth/ping              auth.AuthController.ping()
 POST    /api/auth/user              auth.AuthController.postUser()
+POST    /api/auth/emailConfirmation auth.AuthController.postEmailConfirmation()
