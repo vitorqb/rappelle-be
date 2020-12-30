@@ -74,7 +74,7 @@ def scalafmt(r, args):
 def sbt(r, args):
     cmd = []
     if args.no_supershell:
-        cmd += ['--supershell=false']
+        cmd += ['-Dsbt.supershell=false']
     r.run_sbt(cmd)
 
 
@@ -131,8 +131,6 @@ def curl(r, args):
     url = f"127.0.0.1:9000{args.command[-1]}"
     cmd = [
         "curl",
-        "-H",
-        "Authorization: Bearer faketoken",
         "-H",
         "Content-Type: application/json",
         *args.command[:-1],

@@ -6,8 +6,14 @@ import play.api.Configuration
 import play.api.db.Database
 import org.joda.time.DateTime
 import play.api.Logger
+import play.api.ConfigLoader
+import com.typesafe.config.Config
+import play.api.libs.ws.WSClient
+import scala.concurrent.ExecutionContext
 
 class ServiceModule extends AbstractModule {
+
+  import ServiceConfigLoaders._
 
   val logger = Logger(getClass())
 
@@ -38,5 +44,43 @@ class ServiceModule extends AbstractModule {
         throw new RuntimeException(
           f"Invalid value for services.clock.type: ${x}"
         )
+    }
+
+  @Provides
+  @com.google.inject.Singleton
+  def emailSvc(
+      config: Configuration,
+      ws: WSClient,
+      ec: ExecutionContext
+  ): EmailSvcLike =
+    config.getOptional[String]("services.email.type") match {
+      case None | Some("MailgunEmailSvc") => {
+        logger.info(f"Providing MailgunEmailSvc")
+        new MailgunEmailSvc(
+          config.get[MailgunConfig]("services.email.mailgun"),
+          ws
+        )(ec)
+      }
+      case Some("FakeEmailService") => {
+        logger.info(f"Providing FakeEmailService")
+        new FakeEmailSvc
+      }
+      case Some(x) =>
+        throw new RuntimeException(
+          f"Invalid value for services.email.type: ${x}"
+        )
+    }
+}
+
+object ServiceConfigLoaders {
+  implicit val mailgunConfigLoader: ConfigLoader[MailgunConfig] =
+    new ConfigLoader[MailgunConfig] {
+
+      override def load(config: Config, path: String): MailgunConfig = {
+        val url = config.getString(f"${path}.url")
+        val from = config.getString(f"${path}.from")
+        val key = config.getString(f"${path}.key")
+        MailgunConfig(url, from, key)
+      }
     }
 }

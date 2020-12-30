@@ -40,6 +40,21 @@ class RequestUserExtractorSpec
       }
     }
 
+    "not find an user that has not confirmed it's email" in {
+      WithTestContext() { c =>
+        val user = c.user.copy(emailConfirmed = false)
+        c.userRepo.read(user.id) shouldReturn Future.successful(Some(user))
+        c.tokenRepo.read(c.token.value) shouldReturn Future.successful(
+          Some(c.token)
+        )
+        val request = FakeRequest().withHeaders(
+          "Authorization" -> s"Bearer ${c.token.value}"
+        )
+        val result = c.extractor.extractUser(request).futureValue
+        result must equal(InactiveUserExtractResult(user))
+      }
+    }
+
     "not find an user for a wrong token" in {
       WithTestContext() { c =>
         c.userRepo.read(c.user.id) shouldReturn Future.successful(Some(c.user))
@@ -102,6 +117,7 @@ class RequestUserExtractorSpec
         result must equal(ExpiredTokenExtractResult(c.token))
       }
     }
+
   }
 
   "withUser" should {
@@ -114,6 +130,24 @@ class RequestUserExtractorSpec
           Unauthorized(
             Json.obj("msg" -> "Invalid authentication header format")
           )
+        )
+      }
+    }
+
+    "return forbidden if user is inactive" in {
+      WithTestContext() { c =>
+        val user = c.user.copy(emailConfirmed = false)
+        c.userRepo.read(user.id) shouldReturn Future.successful(Some(user))
+        c.tokenRepo.read(c.token.value) shouldReturn Future.successful(
+          Some(c.token)
+        )
+        val request = FakeRequest().withHeaders(
+          "Authorization" -> s"Bearer ${c.token.value}"
+        )
+        val result =
+          c.extractor.withUser(request)(_ => Future.successful(Ok))
+        result.futureValue must equal(
+          Forbidden(Json.obj("msg" -> "User is not active."))
         )
       }
     }
@@ -150,7 +184,7 @@ class RequestUserExtractorSpec
       val userRepo = mock[UserRepositoryLike]
       val tokenRepo = mock[AuthTokenRepositoryLike]
       val extractor = new RequestUserExtractor(userRepo, tokenRepo, clock)
-      val user = User(123, "a@b.c")
+      val user = User(123, "a@b.c", true)
       val token = Token("tokenvalue", DateTime.parse("2022-12-1"), user.id)
       block(TestContext(user, token, userRepo, tokenRepo, extractor, clock))
     }

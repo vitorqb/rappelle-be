@@ -30,4 +30,6 @@ class FakeUniqueIdGenerator extends UniqueIdGeneratorLike {
     id
   }
 
+  def lastVal(): Int = id
+
 }

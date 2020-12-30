@@ -41,7 +41,7 @@ class AuthTokenRepositoryFunSpec extends PlaySpec with ScalaFutures {
 
     implicit val ec: ExecutionContext = ExecutionContext.global
     val value = "abc123"
-    val user = User(123, "email@email.email")
+    val user = User(123, "email@email.email", true)
     val expiresAt = DateTime.parse("2020-01-01")
     val request = CreateTokenRequest(user, expiresAt, value)
 

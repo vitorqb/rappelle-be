@@ -9,6 +9,7 @@ import scala.concurrent.ExecutionContext
 import services.PasswordHashSvcLike
 import services.UniqueIdGeneratorLike
 import services.ClockLike
+import services.EmailSvcLike
 import play.api.Logger
 
 class AuthModule extends AbstractModule {
@@ -33,9 +34,10 @@ class AuthModule extends AbstractModule {
         val id = config.get[Int]("auth.fakeUser.id")
         val email = config.get[String]("auth.fakeUser.email")
         val password = config.get[String]("auth.fakeUser.password")
+        val emailConfirmed = config.get[Boolean]("auth.fakeUser.emailConfirmed")
         val accessToken = config.get[String]("auth.fakeToken.value")
         val expiresAt = config.get[String]("auth.fakeToken.expiresAt")
-        val user = User(id, email)
+        val user = User(id, email, emailConfirmed)
         val token = Token(accessToken, DateTime.parse(expiresAt), id)
         logger.info(
           f"Providing with DummyAuthTokenRepository($user, $password, $token)"
@@ -67,10 +69,13 @@ class AuthModule extends AbstractModule {
         val id = config.get[Int]("auth.fakeUser.id")
         val email = config.get[String]("auth.fakeUser.email")
         val password = config.get[String]("auth.fakeUser.password")
+        val emailConfirmed = config.get[Boolean]("auth.fakeUser.emailConfirmed")
         val request = CreateUserRequest(email, password)
         val repo = new FakeUserRepository
-        repo.create(request, id)
-        logger.info(f"Providing FakeUserRepository.create($request, $id)")
+        repo.create(request, id, emailConfirmed)
+        logger.info(
+          f"Providing FakeUserRepository.create($request, $id, $emailConfirmed)"
+        )
         repo
       }
       case _ =>
@@ -108,4 +113,66 @@ class AuthModule extends AbstractModule {
       ec: ExecutionContext
   ): RequestUserExtractorLike =
     new RequestUserExtractor(userRepo, tokenRepo, clock)(ec)
+
+  @Provides
+  @com.google.inject.Singleton
+  def emailConfirmationSvcLike(
+      config: Configuration,
+      repo: EmailConfirmationRepositoryLike,
+      clock: ClockLike,
+      ec: ExecutionContext,
+      keyGenerator: TokenGeneratorLike,
+      emailSvc: EmailSvcLike
+  ): EmailConfirmationSvcLike =
+    config.getOptional[String]("auth.emailConfirmationSvc.type") match {
+      case None | Some("EmailConfirmationSvc") => {
+        val expirationSeconds =
+          config.get[Int]("auth.emailConfirmationSvc.expirationSeconds")
+        logger.info(
+          f"Providing EmailConfirmationSvc with expirationSeconds=$expirationSeconds"
+        )
+        new EmailConfirmationSvc(
+          repo,
+          clock,
+          expirationSeconds,
+          keyGenerator,
+          emailSvc
+        )(ec)
+      }
+      case Some("FakeEmailConfirmationSvc") => {
+        val confirmationKey =
+          config.get[String]("auth.fakeEmailConfirmationSvc.confirmationKey")
+        val userId =
+          config.get[Int]("auth.fakeEmailConfirmationSvc.userId")
+        logger.info(f"Providing FakeEmailConfirmationSvc($confirmationKey)")
+        new FakeEmailConfirmationSvc(confirmationKey, userId)
+      }
+      case x =>
+        throw new RuntimeException(
+          f"Invalid value $x for auth.emailConfirmationSvc.type"
+        )
+    }
+
+  @Provides
+  @com.google.inject.Singleton
+  def emailConfirmationRepositoryLike(
+      config: Configuration,
+      db: Database,
+      idGenerator: UniqueIdGeneratorLike,
+      ec: ExecutionContext
+  ): EmailConfirmationRepositoryLike =
+    config.getOptional[String]("auth.emailConfirmationRepository.type") match {
+      case None | Some("EmailConfirmationRepository") => {
+        logger.info(f"Providing EmailConfirmationRepository")
+        new EmailConfirmationRepository(db, idGenerator)(ec)
+      }
+      case Some("FakeEmailConfirmationRepository") => {
+        logger.info(f"Providing FakeEmailConfirmationRepository()")
+        new FakeEmailConfirmationRepository
+      }
+      case x =>
+        throw new RuntimeException(
+          f"Invalid value $x for auth.emailConfirmationRepository.type"
+        )
+    }
 }

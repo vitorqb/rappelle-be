@@ -18,6 +18,9 @@ sealed trait UserExtractResult {
 case class SuccessUserExtractResult(user: User) extends UserExtractResult {
   val logMsg = f"Found user ${user.email}"
 }
+case class InactiveUserExtractResult(user: User) extends UserExtractResult {
+  val logMsg = f"Found INACTIVE user ${user.email}"
+}
 case class MissingUserExtractResult(userId: Int) extends UserExtractResult {
   val logMsg = f"Could not find user with id ${userId}"
 }
@@ -46,6 +49,8 @@ trait RequestUserExtractorLike extends Results {
     extractUser(request).flatMap {
       case SuccessUserExtractResult(u) =>
         block(u)
+      case InactiveUserExtractResult(_) =>
+        Future.successful(Forbidden(Json.obj("msg" -> "User is not active.")))
       case MissingUserExtractResult(_) | ExpiredTokenExtractResult(_) |
           InvalidTokenExtractResult() =>
         Future.successful(Unauthorized(Json.obj("msg" -> "Invalid token")))
@@ -83,8 +88,11 @@ class RequestUserExtractor(
             tokenRepo.read(tokenValue).flatMap {
               case Some(token) if token.isValid(clock.now()) =>
                 userRepo.read(token.userId).map {
-                  case Some(user) => SuccessUserExtractResult(user)
-                  case None       => MissingUserExtractResult(token.userId)
+                  case Some(user) if user.isActive() =>
+                    SuccessUserExtractResult(user)
+                  case Some(user) if !user.isActive() =>
+                    InactiveUserExtractResult(user)
+                  case None => MissingUserExtractResult(token.userId)
                 }
               case Some(token) =>
                 Future.successful(ExpiredTokenExtractResult(token))

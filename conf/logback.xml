@@ -35,6 +35,8 @@
   <logger name="application" level="DEBUG" />
   <logger name="functional.utils.WithTestDb" level="INFO" />
   <logger name="auth" level="INFO" />
+  <logger name="services" level="INFO" />
+  <logger name="meta" level="INFO" />
 
   <root level="WARN">
     <appender-ref ref="ASYNCFILE" />
