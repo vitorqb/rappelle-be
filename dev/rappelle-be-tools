@@ -18,15 +18,21 @@ PROJECT_NAME = "rappelle-be"
 class Runner():
     """ A configurable runner for commands """
 
-    def __init__(self, cwd, docker_compose_cmd):
+    def __init__(self, cwd, docker_compose_cmd, docker_cmd):
         self.cwd = cwd
         self.deploy_dir = f"{cwd}/deploy"
         self.docker_compose_cmd = docker_compose_cmd
+        self.docker_cmd = docker_cmd
 
     def run(self, args, cwd=None):
         cwd = cwd or self.cwd
         print(f"Running {args} in {cwd}")
         subprocess.run(args, cwd=cwd, check=True)
+
+    def check_output(self, args, cwd=None):
+        cwd = cwd or self.cwd
+        print(f"Checking output of {args} in {cwd}")
+        return subprocess.check_output(args, cwd=cwd)
 
     def run_docker_compose(self, args):
         cmd = [
@@ -38,9 +44,13 @@ class Runner():
         ]
         self.run([*cmd, *args], self.deploy_dir)
 
-    def run_sbt(self, args):
+    def run_docker(self, args, **kwargs):
+        self.run([*self.docker_cmd, *args], **kwargs)
+
+    def run_sbt(self, args, cwd=None):
+        cwd = cwd or self.cwd
         cmd = ["coursier", "launch", "sbt", "--"]
-        self.run([*cmd, *args], self.cwd)
+        self.run([*cmd, *args], cwd)
 
 
 # Bootstrap
@@ -139,6 +149,46 @@ def curl(r, args):
     r.run(cmd)
 
 
+def build(r, args):
+
+    # Preparation
+    source_files = ["app", "build.sbt", "conf", "project"]
+    app_version = r.check_output(["git", "describe", "--tags"]).decode().strip()
+    tag = args.tag or f"rappelle-be:{app_version}"
+    build_dir = args.build_dir
+    if not os.path.isabs(build_dir):
+        build_dir = f"{args.directory}/{args.build_dir}"
+
+    # Clean
+    r.run(["rm", "-rf", build_dir])
+
+    # Prepares build directory
+    r.run(["mkdir", build_dir])
+    for f in source_files:
+        r.run(["cp", "-r", f, f"{build_dir}/{f}"])
+    for f in os.listdir(f"{args.directory}/docker"):
+        r.run(["cp", f"{args.directory}/docker/{f}", f"{build_dir}/{f}"])
+
+    # Injects version
+    print(f"Injecting application version: {app_version}")
+    with open(f"{build_dir}/conf/application.conf", "a") as f:
+        f.write("\n")
+        f.write("# AUTOMATICALLY INJECTED VERSION\n")
+        f.write(f"app.version = {app_version}\n")
+        f.write("\n")
+
+    # Compiles
+    r.run_sbt(['-Dsbt.supershell=false', 'universal:packageZipTarball'], cwd=build_dir)
+
+    # Builds image
+    r.run_docker([
+        'build',
+        f'--build-arg=APP_VERSION={app_version}',
+        f'-t={tag}',
+        build_dir
+    ])
+
+
 # Arg parsing
 parser = argparse.ArgumentParser(description="Development tools for rappelle-be")
 parser.add_argument(
@@ -151,6 +201,11 @@ parser.add_argument(
     "--docker-compose-cmd",
     help="shell command to use to run docker-compose. Must be a valid json array.",
     default=os.environ.get("RAPPELLE_BE_DOCKER_COMPOSE_CMD", "[\"docker-compose\"]")
+)
+parser.add_argument(
+    "--docker-cmd",
+    help="shell command to use to run docker. Must be a valid json array.",
+    default=os.environ.get("RAPPELLE_BE_DOCKER_CMD", "[\"docker\"]")
 )
 subparsers = parser.add_subparsers()
 
@@ -187,6 +242,11 @@ parser_run = subparsers.add_parser('run')
 parser_run.set_defaults(func=run)
 parser_run.add_argument('-p', '--port')
 
+parser_build = subparsers.add_parser('build')
+parser_build.set_defaults(func=build)
+parser_build.add_argument("-d", "--build_dir", help="Build directory", default="target/build")
+parser_build.add_argument('-t', '--tag', help="tag for docker file")
+
 parser_curl = subparsers.add_parser('curl')
 parser_curl.set_defaults(func=curl)
 parser_curl.add_argument('command', nargs='+', help="Runs curl with custom headers. Assumes the relative url is the last param.")
@@ -196,6 +256,7 @@ parser_curl.add_argument('command', nargs='+', help="Runs curl with custom heade
 if __name__ == "__main__":
     args = parser.parse_args()
     bootstrap(args)
+    docker_cmd = json.loads(args.docker_cmd)
     docker_compose_cmd = json.loads(args.docker_compose_cmd)
-    runner = Runner(cwd=args.directory, docker_compose_cmd=docker_compose_cmd)
+    runner = Runner(cwd=args.directory, docker_compose_cmd=docker_compose_cmd, docker_cmd=docker_cmd)
     args.func(runner, args)

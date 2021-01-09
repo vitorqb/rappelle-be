@@ -3,6 +3,14 @@ organization := "github.com.vitorqb"
 version := "1.0-SNAPSHOT"
 scalaVersion := "2.13.3"
 
+//Versioning has a special handling to we are able to inject it during build time.
+//We read versioning from `AppVersioning.scala`, which in turns read it from
+//Play's configuration `application.conf`. When building the application, you
+//(or the CI system) can just find the right version using git and echo append
+//it to the very end of `application.conf`, and it will endup here and be readable
+//by the code.
+version := AppVersioning.appVersion
+
 //A configuration key for functional tests, with helper functions to identify the test type
 lazy val FunTest = config("fun") extend(Test)
 lazy val AllTests = config("alltests") extend(Test)
