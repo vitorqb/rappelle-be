@@ -4,7 +4,7 @@ jobs:
 
   test:
     docker: 
-      - image: vitorqb23/rappelle-be-ci:4
+      - image: vitorqb23/rappelle-be-ci:6
     steps:
       - checkout
       - run:
@@ -16,7 +16,7 @@ jobs:
 
   scalafmt:
     docker:
-      - image: vitorqb23/rappelle-be-ci:4
+      - image: vitorqb23/rappelle-be-ci:6
     steps:
       - checkout
       - run:
@@ -53,7 +53,7 @@ jobs:
               --name funtest \
               --entrypoint='/bin/bash' \
               --network=host \
-              "vitorqb23/rappelle-be-ci:4"
+              "vitorqb23/rappelle-be-ci:6"
       - run:
           name: Installs sbt (in container)
           command: >-
@@ -61,7 +61,22 @@ jobs:
       - run:
           name: Run functional tests (in container)
           command: docker exec funtest rappelle-be-tools test --functional
-
+  build:
+    docker: 
+      - image: vitorqb23/rappelle-be-ci:6
+    steps:
+      - setup_remote_docker
+      - checkout
+      - run:
+          name: Saves image tag to file
+          command: >-
+            echo ${DOCKER_REPO}/rappelle-be:$(git describe --tags | tr -d '\n') | tee ./imgtag
+      - run:
+          name: Build
+          command: rappelle-be-tools build -t "$(cat ./imgtag)"
+      - run:
+          name: Push
+          command: docker login -u $DOCKER_USER -p $DOCKER_PASS && docker push "$(cat ./imgtag)"    
 
 workflows:
   version: 2
@@ -70,3 +85,13 @@ workflows:
       - test: {}
       - funTest: {}
       - scalafmt: {}
+  build:
+    jobs:
+      - build:
+          context: main
+          filters:
+            branches:
+              only:
+                - master
+            tags:
+              only: /^[0-9]+\.[0-9]+\.[0-9]+$/
