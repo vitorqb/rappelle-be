@@ -8,9 +8,6 @@ import json
 
 # Globals
 # (some day should be converted to configurable options)
-DB_NAME = "rappelle-be"
-TEST_DB_NAME = "rappelle-be-test"
-POSTGRES_USER = "theuser"
 PROJECT_NAME = "rappelle-be"
 
 
@@ -101,30 +98,6 @@ def test(r, args):
     r.run_sbt([subCmd])
 
 
-def postgres(r, args):
-    cmd = ['up', '--force-recreate']
-    if args.detach:
-        cmd += ["--detach"]
-    cmd += ['postgres']
-    r.run_docker_compose(cmd)
-
-
-def wait_for_postgres(r, args):
-    cmd = [
-        "exec",
-        "postgres",
-        "bash",
-        "-c",
-        "until pg_isready; do sleep 2; done"
-    ]
-    r.run_docker_compose(cmd)
-
-
-def postgres_shell(r, args):
-    db = (TEST_DB_NAME if args.test else DB_NAME)
-    r.run_docker_compose(['exec', 'postgres', 'psql', db, POSTGRES_USER])
-
-
 def docker_compose(r, args):
     cmd = args.command
     r.run_docker_compose(cmd)
@@ -163,7 +136,7 @@ def build(r, args):
     r.run(["rm", "-rf", build_dir])
 
     # Prepares build directory
-    r.run(["mkdir", build_dir])
+    r.run(["mkdir", "-p", build_dir])
     for f in source_files:
         r.run(["cp", "-r", f, f"{build_dir}/{f}"])
     for f in os.listdir(f"{args.directory}/docker"):
@@ -217,22 +190,11 @@ parser_sbt = subparsers.add_parser('sbt')
 parser_sbt.set_defaults(func=sbt)
 parser_sbt.add_argument("--no-supershell", dest="no_supershell", action="store_true")
 
-parser_postgres = subparsers.add_parser('postgres')
-parser_postgres.set_defaults(func=postgres)
-parser_postgres.add_argument("-d", "--detach", help="Detaches after running", action="store_true")
-
 parser_test = subparsers.add_parser('test')
 parser_test.set_defaults(func=test)
 parser_test.add_argument("-f", "--functional", dest="functional", action="store_true", help="Run functional tests instead")
 parser_test.add_argument("-p", "--pattern", help="Test pattern to pass to sbt (e.g. **MyCoolSpec)")
 parser_test.add_argument("-a", "--all", action="store_true", help="Run all tests. All other args are ignored.")
-
-parser_postgres_shell = subparsers.add_parser('postgres-shell')
-parser_postgres_shell.set_defaults(func=postgres_shell)
-parser_postgres_shell.add_argument("-t", "--test", help="Connect to test db instead.", action="store_true")
-
-parser_wait_for_postgres = subparsers.add_parser('wait-for-postgres')
-parser_wait_for_postgres.set_defaults(func=wait_for_postgres)
 
 parser_docker_compose = subparsers.add_parser('docker-compose')
 parser_docker_compose.set_defaults(func=docker_compose)
