@@ -6,6 +6,8 @@ appended to the play entrypoint.
 For example, you can change the port using
 '"$0"' -Dhttp.port=9999'
 
+function msg() { echo "[RAPPELLE_DEV ENTRYPOINT]" "$@" ; }
+
 # getopt
 SHORT='h:'
 LONG='help:'
@@ -32,12 +34,29 @@ do
     esac
 done
 
+# Common options passed to the application
 cmd=(
     '/apps/rappelle/run'
     '-Dhttp.port=8000'
     '-Dplay.evolutions.db.default.autoApply=true'
     '-Dpidfile.path=/dev/null'
 )
+
+# If we find a custom application config mounted at /apps/rappelle/application.conf, use it
+if [ -r /apps/rappelle/application.conf ]
+then
+    msg "Found config file /apps/rappelle/application.conf"
+    cmd+=( '-Dconfig.file=/apps/rappelle/application.conf' )
+
+# If we didn't find a custom, use a default config
+else
+    msg "Using default configuration application.prod.conf"
+    cmd+=( '-Dconfig.resource=application.prod.conf' )
+fi
+
+# Transparently passes any extra args
 cmd+=( "$@" )
-echo "Executing: ${cmd[@]}"
+
+# Executes
+msg "Executing: ${cmd[@]}"
 "${cmd[@]}"
