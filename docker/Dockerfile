@@ -1,8 +1,13 @@
-FROM openjdk:11
+FROM openjdk:14-alpine
 
 ARG APP_VERSION
 
 EXPOSE 8000
+
+# Install getopt
+RUN apk add --update-cache bash util-linux && rm -rf /var/cache/apk/*
+RUN getopt --version
+RUN bash --version
 
 # Prepares the work dir
 RUN mkdir -p /apps/rappelle
