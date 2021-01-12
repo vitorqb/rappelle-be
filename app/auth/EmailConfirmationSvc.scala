@@ -6,6 +6,12 @@ import services.EmailSvcLike
 import scala.concurrent.ExecutionContext
 import play.api.Logger
 
+/** An object that knows how to render a callback url for the confirmation email.
+  */
+trait CallbackGeneratorLike {
+  def render(key: String): String
+}
+
 /** Main service used to confirm emails.
   */
 trait EmailConfirmationSvcLike {
@@ -15,7 +21,8 @@ trait EmailConfirmationSvcLike {
   ): Future[EmailConfirmationResult]
 
   def send(
-      user: User
+      user: User,
+      callbackGenerator: CallbackGeneratorLike
   ): Future[Unit]
 }
 
@@ -34,17 +41,26 @@ class EmailConfirmationSvc(
   val logger = Logger(getClass())
   val keySize = 10
   val emailSubject = "Confirm your Rappelle accoount!"
-  def emailBody(key: String) = f"""
-   |Your activation key is ${key}
+  def emailBody(key: String, callbackGenerator: CallbackGeneratorLike) = f"""
+   |Please click on the following link to confirm your account:
+   |
+   |  ${callbackGenerator.render(key)}
+   |
+   |Thanks!
    |""".stripMargin
 
-  override def send(user: User): Future[Unit] = {
+  override def send(
+      user: User,
+      callbackGenerator: CallbackGeneratorLike
+  ): Future[Unit] = {
     logger.info(f"Sending for user $user")
     val key = keyGenerator.genValue(keySize)
     val now = clock.now()
     val createRequest = CreateEmailConfirmationRequest(user.id, key, now)
     repo.create(createRequest).flatMap { _ =>
-      emailSvc.send(user.email, emailSubject, emailBody(key))
+      emailSvc
+        .send(user.email, emailSubject, emailBody(key, callbackGenerator))
+        .map(_ => ())
     }
   }
 
@@ -86,7 +102,10 @@ class EmailConfirmationSvc(
 class FakeEmailConfirmationSvc(confirmationKey: String, userId: Int)
     extends EmailConfirmationSvcLike {
 
-  override def send(user: User): Future[Unit] = ???
+  override def send(
+      user: User,
+      callbackGenerator: CallbackGeneratorLike
+  ): Future[Unit] = Future.successful(())
 
   override def confirm(
       request: EmailConfirmationRequest

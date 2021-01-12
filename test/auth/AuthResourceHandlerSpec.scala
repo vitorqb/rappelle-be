@@ -7,6 +7,7 @@ import org.joda.time.DateTime
 import scala.concurrent.Future
 import org.scalatest.concurrent.ScalaFutures
 import scala.concurrent.ExecutionContext
+import play.api.test.FakeRequest
 
 class AuthResourceHandlerSpec
     extends PlaySpec
@@ -48,12 +49,14 @@ class AuthResourceHandlerSpec
         val user = User(999, request.email, true)
         c.userRepo.read(request.email) shouldReturn Future.successful(None)
         c.userRepo.create(request) shouldReturn Future.successful(user)
+        c.emailConfirmationSvc.send(*, *) shouldReturn Future.successful(())
 
-        val result = c.handler.createUser(requestInput).futureValue
+        val result =
+          c.handler.createUser(requestInput)(FakeRequest()).futureValue
 
         result must equal(user)
         c.userRepo.create(request) wasCalled once
-        c.emailConfirmationSvc.send(user) wasCalled once
+        c.emailConfirmationSvc.send(user, *) wasCalled once
       }
     }
 
@@ -64,7 +67,8 @@ class AuthResourceHandlerSpec
           Some(c.user)
         )
 
-        val result = c.handler.createUser(requestInput).failed.futureValue
+        val result =
+          c.handler.createUser(requestInput)(FakeRequest()).failed.futureValue
 
         result mustBe a[UserAlreadyExists]
         c.userRepo.create(*) wasCalled 0.times

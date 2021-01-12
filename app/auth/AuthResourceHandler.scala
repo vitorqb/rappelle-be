@@ -4,12 +4,14 @@ import com.google.inject.ImplementedBy
 import scala.concurrent.Future
 import com.google.inject.Inject
 import scala.concurrent.ExecutionContext
-import scala.util.Success
+import play.api.mvc.RequestHeader
 
 @ImplementedBy(classOf[AuthResourceHandler])
 trait AuthResourceHandlerLike {
   def createToken(requestInput: CreateTokenRequestInput): Future[Token]
-  def createUser(requestInput: CreateUserRequestInput): Future[User]
+  def createUser(requestInput: CreateUserRequestInput)(implicit
+      r: RequestHeader
+  ): Future[User]
   def confirmEmail(
       request: EmailConfirmationRequest
   ): Future[EmailConfirmationResult]
@@ -38,12 +40,23 @@ class AuthResourceHandler @Inject() (
     }
   }
 
-  def createUser(requestInput: CreateUserRequestInput): Future[User] = {
+  def createUser(
+      requestInput: CreateUserRequestInput
+  )(implicit r: RequestHeader): Future[User] = {
     val request = CreateUserRequest(requestInput.email, requestInput.password)
+    val callbackGenerator = new CallbackGeneratorLike {
+      def render(key: String) =
+        routes.AuthController
+          .emailConfirmationCallback(key)
+          .absoluteURL()
+          .toString()
+    }
     userRepo.read(request.email).flatMap {
       case None =>
-        userRepo.create(request).andThen { case Success(user) =>
-          emailConfirmationSvc.send(user)
+        userRepo.create(request).flatMap { user =>
+          emailConfirmationSvc.send(user, callbackGenerator).map { _ =>
+            user
+          }
         }
       case Some(_) => Future.failed(new UserAlreadyExists)
     }

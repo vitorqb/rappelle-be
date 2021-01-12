@@ -74,6 +74,11 @@ class AuthController @Inject() (
         }
       }
   }
+
+  def emailConfirmationCallback(key: String) = Action { implicit r =>
+    //This is a redirect to the FE
+    Found(f"/#/emailConfirmation?key=$key")
+  }
 }
 
 object WithAuthErrorHandling extends Results {

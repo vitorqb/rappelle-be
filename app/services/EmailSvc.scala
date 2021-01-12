@@ -4,6 +4,7 @@ import scala.concurrent.Future
 import play.api.Logger
 import play.api.libs.ws.{WSAuthScheme, WSClient}
 import scala.concurrent.ExecutionContext
+import scala.collection.mutable.ListBuffer
 
 trait EmailSvcLike {
   def send(to: String, subject: String, content: String): Future[Unit]
@@ -42,4 +43,33 @@ class MailgunEmailSvc(config: MailgunConfig, ws: WSClient)(implicit
 //Fake Impl
 class FakeEmailSvc extends EmailSvcLike {
   def send(to: String, subject: String, content: String): Future[Unit] = ???
+}
+
+//Test Impl
+class TestEmailSvc extends EmailSvcLike {
+
+  import TestEmailSvc._
+
+  private var sentEmails = Seq.empty[SentEmail]
+  private val logger = Logger(getClass())
+
+  def getSentEmails() = sentEmails
+
+  override def send(
+      to: String,
+      subject: String,
+      content: String
+  ): Future[Unit] = {
+    val sent = SentEmail(to, subject, content)
+    logger.info(f"Sending email: $sent")
+    sentEmails = sentEmails ++ Seq(sent)
+    Future.successful((): Unit)
+  }
+
+}
+
+object TestEmailSvc {
+
+  case class SentEmail(to: String, subject: String, content: String)
+
 }

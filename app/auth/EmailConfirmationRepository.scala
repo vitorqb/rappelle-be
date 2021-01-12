@@ -8,6 +8,7 @@ import scala.concurrent.ExecutionContext
 import services.UniqueIdGeneratorLike
 import anorm.JodaParameterMetaData._
 import java.sql.Connection
+import play.api.Logger
 
 /** Stores information about email confirmations.
   */
@@ -32,10 +33,12 @@ class EmailConfirmationRepository(
   import EmailConfirmationSqlParsers._
 
   val table = "emailConfirmations"
+  private val logger = Logger(getClass())
 
   def create(
       request: CreateEmailConfirmationRequest
   ): Future[EmailConfirmation] = {
+    logger.info(f"Creation for userId ${request.userId}")
     Future {
       db.withConnection { implicit c =>
         SQL(
@@ -52,6 +55,7 @@ class EmailConfirmationRepository(
           .execute()
       }
     } flatMap { _ =>
+      logger.info(f"Finished creation for userId ${request.userId}")
       read(request.key).map(_.get)
     }
   }
@@ -86,6 +90,7 @@ class EmailConfirmationRepository(
   }
 
   override def read(key: String): Future[Option[EmailConfirmation]] = Future {
+    logger.info(f"Reading...")
     db.withConnection { implicit c =>
       SQL(f"SELECT * FROM ${table} WHERE key={key}")
         .on("key" -> key)
@@ -95,6 +100,7 @@ class EmailConfirmationRepository(
   }
 
   override def read(id: Int): Future[Option[EmailConfirmation]] = Future {
+    logger.info(f"Reading...")
     db.withConnection { implicit c =>
       SQL(f"SELECT * FROM ${table} WHERE id={id}")
         .on("id" -> id)

@@ -65,6 +65,10 @@ class ServiceModule extends AbstractModule {
         logger.info(f"Providing FakeEmailService")
         new FakeEmailSvc
       }
+      case Some("TestEmailSvc") => {
+        logger.info("Providing TestEmailSvc")
+        new TestEmailSvc
+      }
       case Some(x) =>
         throw new RuntimeException(
           f"Invalid value for services.email.type: ${x}"

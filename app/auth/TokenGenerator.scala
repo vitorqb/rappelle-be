@@ -27,5 +27,9 @@ class FakeTokenGenerator(token: String, expirationDate: DateTime)
     extends TokenGeneratorLike {
   override def genExpirationDate(): DateTime = expirationDate
   override def genValue(): String = token
-  override def genValue(length: Int): String = ???
+  override def genValue(length: Int): String = {
+    val repetitions = math.ceil(length / token.length()).toInt
+    val source = token * repetitions
+    source.slice(0, length)
+  }
 }
