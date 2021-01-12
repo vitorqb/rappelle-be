@@ -72,11 +72,13 @@ class AuthControllerSpec
         val createUserReqInput =
           CreateUserRequestInput("new@user.com", "new_password")
         val user = User(1, createUserReqInput.email, true)
-        c.resourceHandler.createUser(createUserReqInput) shouldReturn Future
-          .successful(user)
         val body = Json.toJson(createUserReqInput)
         val request =
           FakeRequest(routes.AuthController.postUser()).withBody(body)
+        c.resourceHandler.createUser(createUserReqInput)(
+          request
+        ) shouldReturn Future
+          .successful(user)
         val result = c.controller.postUser()(request)
         Helpers.status(result) must equal(CREATED)
         Helpers.contentAsJson(result) must equal(
@@ -87,11 +89,13 @@ class AuthControllerSpec
     "returns error if user already exists" in {
       WithTestContext() { c =>
         val createUserReqInput = CreateUserRequestInput(c.user.email, "pass")
-        c.resourceHandler.createUser(createUserReqInput) shouldReturn Future
-          .failed(new UserAlreadyExists)
         val body = Json.toJson(createUserReqInput)
         val request =
           FakeRequest(routes.AuthController.postUser()).withBody(body)
+        c.resourceHandler.createUser(createUserReqInput)(
+          request
+        ) shouldReturn Future
+          .failed(new UserAlreadyExists)
         val result = c.controller.postUser()(request)
         Helpers.status(result) must equal(BAD_REQUEST)
         Helpers.contentAsJson(result) must equal(

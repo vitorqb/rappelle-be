@@ -29,10 +29,17 @@ class EmailConfirmationSvcSpec
           mock[EmailConfirmation]
         )
 
-        c.service.send(c.user)
+        c.service.send(c.user, c.callbackGenerator)
 
         c.repo.create(confirmationRequest) wasCalled once
-        c.emailSvc.send(c.user.email, *, *) wasCalled once
+        val expectedEmailBody = f"""
+        |Please click on the following link to confirm your account:
+        |
+        |  http://foo?key=${c.key}
+        |
+        |Thanks!
+        |""".stripMargin
+        c.emailSvc.send(c.user.email, *, expectedEmailBody) wasCalled once
       }
     }
   }
@@ -97,7 +104,8 @@ class EmailConfirmationSvcSpec
       repo: EmailConfirmationRepositoryLike,
       clock: ClockLike,
       expirationSeconds: Int,
-      service: EmailConfirmationSvc
+      service: EmailConfirmationSvc,
+      callbackGenerator: CallbackGeneratorLike
   ) {
     def updateRequest(expiresAt: Option[DateTime]) =
       UpdateEmailConfirmationRequest(oldEmailConfirmation.id, Some(expiresAt))
@@ -136,7 +144,10 @@ class EmailConfirmationSvcSpec
             emailSvc
           ),
           clock = clock,
-          expirationSeconds = expirationSeconds
+          expirationSeconds = expirationSeconds,
+          callbackGenerator = new CallbackGeneratorLike {
+            def render(key: String): String = f"http://foo?key=$key"
+          }
         )
       )
     }
