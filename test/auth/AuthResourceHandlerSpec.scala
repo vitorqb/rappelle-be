@@ -148,7 +148,8 @@ class AuthResourceHandlerSpec
             tokenRepo,
             userRepo,
             tokenGenerator,
-            emailConfirmationSvc
+            emailConfirmationSvc,
+            "http://127.0.0.1:9000"
           )
         )
       )

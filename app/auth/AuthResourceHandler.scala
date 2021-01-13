@@ -2,7 +2,6 @@ package auth
 
 import com.google.inject.ImplementedBy
 import scala.concurrent.Future
-import com.google.inject.Inject
 import scala.concurrent.ExecutionContext
 import play.api.mvc.RequestHeader
 
@@ -17,11 +16,12 @@ trait AuthResourceHandlerLike {
   ): Future[EmailConfirmationResult]
 }
 
-class AuthResourceHandler @Inject() (
+class AuthResourceHandler(
     authTokenRepo: AuthTokenRepositoryLike,
     userRepo: UserRepositoryLike,
     tokenGenerator: TokenGeneratorLike,
-    emailConfirmationSvc: EmailConfirmationSvcLike
+    emailConfirmationSvc: EmailConfirmationSvcLike,
+    frontendUrl: String
 )(implicit val ec: ExecutionContext)
     extends AuthResourceHandlerLike {
 
@@ -45,11 +45,7 @@ class AuthResourceHandler @Inject() (
   )(implicit r: RequestHeader): Future[User] = {
     val request = CreateUserRequest(requestInput.email, requestInput.password)
     val callbackGenerator = new CallbackGeneratorLike {
-      def render(key: String) =
-        routes.AuthController
-          .emailConfirmationCallback(key)
-          .absoluteURL()
-          .toString()
+      def render(key: String) = f"${frontendUrl}/#/emailConfirmation?key=$key"
     }
     userRepo.read(request.email).flatMap {
       case None =>

@@ -36,7 +36,7 @@ class AuthResourceHandlerFunSpec extends PlaySpec with ScalaFutures {
               f"""
             |Please click on the following link to confirm your account:
             |
-            |  http://localhost/api/auth/emailConfirmationCallback?key=fakeToken
+            |  ${c.frontendUrl}/#/emailConfirmation?key=fakeToken
             |
             |Thanks!
             |""".stripMargin
@@ -52,6 +52,7 @@ class AuthResourceHandlerFunSpec extends PlaySpec with ScalaFutures {
       fakeToken: String,
       expirationDate: DateTime,
       handler: AuthResourceHandler,
+      frontendUrl: String,
       testEmailSvc: TestEmailSvc
   )
 
@@ -60,13 +61,15 @@ class AuthResourceHandlerFunSpec extends PlaySpec with ScalaFutures {
     implicit val ec: ExecutionContext = ExecutionContext.global
     val fakeToken = "fakeToken"
     val expirationDate = "2021-01-12T20:23:39"
+    val frontendUrl = "http://127.0.0.1:9000"
 
     val conf = Map(
       "auth.fakeToken.value" -> fakeToken,
       "auth.fakeToken.expiresAt" -> expirationDate,
       "auth.emailConfirmationSvc.type" -> "EmailConfirmationSvc",
       "auth.emailConfirmationRepository.type" -> "EmailConfirmationRepository",
-      "services.email.type" -> "TestEmailSvc"
+      "services.email.type" -> "TestEmailSvc",
+      "frontendUrl" -> frontendUrl
     )
 
     def apply(block: TestContext => Any): Any = {
@@ -76,8 +79,11 @@ class AuthResourceHandlerFunSpec extends PlaySpec with ScalaFutures {
             TestContext(
               fakeToken = fakeToken,
               expirationDate = DateTime.parse(expirationDate),
-              app.injector.instanceOf[AuthResourceHandler],
-              app.injector.instanceOf[EmailSvcLike].asInstanceOf[TestEmailSvc]
+              handler = app.injector.instanceOf[AuthResourceHandler],
+              testEmailSvc = app.injector
+                .instanceOf[EmailSvcLike]
+                .asInstanceOf[TestEmailSvc],
+              frontendUrl = frontendUrl
             )
           )
         }
