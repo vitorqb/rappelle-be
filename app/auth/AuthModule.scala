@@ -17,6 +17,24 @@ class AuthModule extends AbstractModule {
   val logger = Logger(getClass)
 
   @Provides
+  def authResourceHandler(
+      authTokenRepo: AuthTokenRepositoryLike,
+      userRepo: UserRepositoryLike,
+      tokenGenerator: TokenGeneratorLike,
+      emailConfirmationSvc: EmailConfirmationSvcLike,
+      ec: ExecutionContext,
+      config: Configuration
+  ) = {
+    new AuthResourceHandler(
+      authTokenRepo,
+      userRepo,
+      tokenGenerator,
+      emailConfirmationSvc,
+      config.get[String]("frontendUrl")
+    )(ec)
+  }
+
+  @Provides
   @com.google.inject.Singleton
   def authTokenRepositoryLike(
       config: Configuration,
