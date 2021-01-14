@@ -24,6 +24,8 @@ class AuthResourceHandlerSpec
         c.userRepo.read(c.user.email) shouldReturn Future.successful(
           Some(c.user)
         )
+        c.userRepo.passwordIsValid(c.user, "pass") shouldReturn Future
+          .successful(true)
         val input = CreateTokenRequestInput(c.user.email, "pass")
         val request =
           CreateTokenRequest(c.user, c.expiresAt, "sometoken")
@@ -34,6 +36,21 @@ class AuthResourceHandlerSpec
 
         result.futureValue mustEqual token
         c.tokenRepo.create(request) wasCalled once
+      }
+    }
+
+    "fails if password is wrong" in {
+      WithTestContext() { c =>
+        val invalidPass = new InvalidPassword
+        c.userRepo.read(c.user.email) shouldReturn Future.successful(
+          Some(c.user)
+        )
+        c.userRepo.passwordIsValid(c.user, "pass") shouldReturn Future.failed(
+          invalidPass
+        )
+        val input = CreateTokenRequestInput(c.user.email, "pass")
+        c.handler.createToken(input).failed.futureValue must equal(invalidPass)
+        c.tokenRepo.create(*) wasNever called
       }
     }
 
