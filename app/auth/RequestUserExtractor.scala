@@ -43,7 +43,7 @@ trait RequestUserExtractorLike extends Results {
 
   implicit val ec: ExecutionContext
 
-  final def withUser(request: Request[AnyContent])(
+  final def withUser[A](request: Request[A])(
       block: User => Future[Result]
   ): Future[Result] = {
     extractUser(request).flatMap {
@@ -63,7 +63,7 @@ trait RequestUserExtractorLike extends Results {
     }
   }
 
-  def extractUser(request: Request[AnyContent]): Future[UserExtractResult]
+  def extractUser[A](request: Request[A]): Future[UserExtractResult]
 
 }
 
@@ -78,8 +78,8 @@ class RequestUserExtractor(
   protected val logger = Logger(getClass())
   protected val TokenRegex = "^Bearer (.*)$".r
 
-  override def extractUser(
-      request: Request[AnyContent]
+  override def extractUser[A](
+      request: Request[A]
   ): Future[UserExtractResult] = {
     val result = request.headers.get("Authorization") match {
       case Some(header) =>
@@ -114,9 +114,7 @@ class FakeRequestUserExtractor(user: Option[User])(implicit
 
   protected val logger = Logger(getClass())
 
-  override def extractUser(
-      request: Request[AnyContent]
-  ): Future[UserExtractResult] =
+  override def extractUser[A](request: Request[A]): Future[UserExtractResult] =
     Future.successful(
       user
         .map(SuccessUserExtractResult.apply)

@@ -29,13 +29,17 @@ class AuthResourceHandler(
     userRepo.read(requestInput.email).flatMap {
       case None => throw new UserDoesNotExist()
       case Some(user) => {
-        val request =
-          CreateTokenRequest(
-            user,
-            tokenGenerator.genExpirationDate(),
-            tokenGenerator.genValue()
-          )
-        authTokenRepo.create(request)
+        userRepo.passwordIsValid(user, requestInput.password).flatMap {
+          case true =>
+            authTokenRepo.create(
+              CreateTokenRequest(
+                user,
+                tokenGenerator.genExpirationDate(),
+                tokenGenerator.genValue()
+              )
+            )
+          case false => throw new InvalidPassword
+        }
       }
     }
   }

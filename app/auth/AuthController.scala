@@ -86,6 +86,8 @@ object WithAuthErrorHandling extends Results {
         BadRequest(Json.obj("msg" -> "User does not exist"))
       case e: UserAlreadyExists =>
         BadRequest(Json.obj("msg" -> "An user with this email already exists."))
+      case e: InvalidPassword =>
+        BadRequest(Json.obj("msg" -> "Invalid password!"))
     }
   }
 }
