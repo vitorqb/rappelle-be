@@ -1,7 +1,0 @@
-version: "3.7"
-services:
-  postgres:
-    build: ./postgres
-    environment:
-      - POSTGRES_DB=rappelle-be
-      - POSTGRES_DB_2=rappelle-be-test

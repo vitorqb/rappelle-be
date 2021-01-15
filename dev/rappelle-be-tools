@@ -15,10 +15,9 @@ PROJECT_NAME = "rappelle-be"
 class Runner():
     """ A configurable runner for commands """
 
-    def __init__(self, cwd, docker_compose_cmd, docker_cmd):
+    def __init__(self, cwd, docker_cmd):
         self.cwd = cwd
         self.deploy_dir = f"{cwd}/deploy"
-        self.docker_compose_cmd = docker_compose_cmd
         self.docker_cmd = docker_cmd
 
     def run(self, args, cwd=None):
@@ -30,16 +29,6 @@ class Runner():
         cwd = cwd or self.cwd
         print(f"Checking output of {args} in {cwd}")
         return subprocess.check_output(args, cwd=cwd)
-
-    def run_docker_compose(self, args):
-        cmd = [
-            *self.docker_compose_cmd,
-            f"-p{PROJECT_NAME}",
-            "-fdocker-compose.yaml",
-            "-fdocker-compose.local.yaml",
-            "-fdocker-compose.dev.yaml"
-        ]
-        self.run([*cmd, *args], self.deploy_dir)
 
     def run_docker(self, args, **kwargs):
         self.run([*self.docker_cmd, *args], **kwargs)
@@ -62,11 +51,6 @@ def bootstrap(args):
         print(f"BOOTSTRAP: Creating {args.directory}/conf/application.funTest.conf")
         with open(f"{args.directory}/conf/application.funTest.conf", "wb") as f:
             f.write(b"include \"application.local\"")
-
-    if not os.path.exists(f"{args.directory}/deploy/docker-compose.dev.yaml"):
-        print(f"BOOTSTRAP: Creating {args.directory}/deploy/docker-compose.dev.yaml")
-        with open(f"{args.directory}/deploy/docker-compose.dev.yaml", "wb") as f:
-            f.write(b"version: \"3.7\"")
 
 
 # Commands
@@ -96,11 +80,6 @@ def test(r, args):
     if args.pattern and args.pattern != "":
         subCmd += f" {args.pattern}"
     r.run_sbt([subCmd])
-
-
-def docker_compose(r, args):
-    cmd = args.command
-    r.run_docker_compose(cmd)
 
 
 def run(r, args):
@@ -171,11 +150,6 @@ parser.add_argument(
     default=os.environ.get("RAPPELLE_BE_REPO_ROOT", "~/git/rappelle-be")
 )
 parser.add_argument(
-    "--docker-compose-cmd",
-    help="shell command to use to run docker-compose. Must be a valid json array.",
-    default=os.environ.get("RAPPELLE_BE_DOCKER_COMPOSE_CMD", "[\"docker-compose\"]")
-)
-parser.add_argument(
     "--docker-cmd",
     help="shell command to use to run docker. Must be a valid json array.",
     default=os.environ.get("RAPPELLE_BE_DOCKER_CMD", "[\"docker\"]")
@@ -196,10 +170,6 @@ parser_test.add_argument("-f", "--functional", dest="functional", action="store_
 parser_test.add_argument("-p", "--pattern", help="Test pattern to pass to sbt (e.g. **MyCoolSpec)")
 parser_test.add_argument("-a", "--all", action="store_true", help="Run all tests. All other args are ignored.")
 
-parser_docker_compose = subparsers.add_parser('docker-compose')
-parser_docker_compose.set_defaults(func=docker_compose)
-parser_docker_compose.add_argument('command', nargs='+', help="Runs command in docker-compose")
-
 parser_run = subparsers.add_parser('run')
 parser_run.set_defaults(func=run)
 parser_run.add_argument('-p', '--port')
@@ -219,6 +189,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
     bootstrap(args)
     docker_cmd = json.loads(args.docker_cmd)
-    docker_compose_cmd = json.loads(args.docker_compose_cmd)
-    runner = Runner(cwd=args.directory, docker_compose_cmd=docker_compose_cmd, docker_cmd=docker_cmd)
+    runner = Runner(cwd=args.directory, docker_cmd=docker_cmd)
     args.func(runner, args)
