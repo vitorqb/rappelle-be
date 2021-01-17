@@ -91,7 +91,11 @@ class AuthFunSpec extends PlaySpec with ScalaFutures {
         //FakeUserRepository increases ids by 1
         val expectedId = c.id + 1
         createResult.json must equal(
-          Json.obj("id" -> expectedId, "email" -> newUserEmail)
+          Json.obj(
+            "id" -> expectedId,
+            "email" -> newUserEmail,
+            "isActive" -> false
+          )
         )
 
         val confirmEmailResult = c
@@ -109,6 +113,7 @@ class AuthFunSpec extends PlaySpec with ScalaFutures {
           .execute("POST")
           .futureValue
         tokenResult.status must equal(200)
+        val cookie = tokenResult.cookie("RappelleAuth").get
 
         val token = (tokenResult.json \ "value").as[String]
         val pingResult = c
@@ -117,6 +122,19 @@ class AuthFunSpec extends PlaySpec with ScalaFutures {
           .execute()
           .futureValue
         pingResult.status must equal(204)
+
+        val userResult = c
+          .request("/api/auth/user")
+          .withCookies(cookie)
+          .execute()
+          .futureValue
+        userResult.json must equal(
+          Json.obj(
+            "id" -> 1,
+            "email" -> newUserEmail,
+            "isActive" -> true
+          )
+        )
       }
     }
 

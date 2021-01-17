@@ -15,7 +15,8 @@ import play.api.Logger
 class AuthController @Inject() (
     val controllerComponents: ControllerComponents,
     val resourceHandler: AuthResourceHandlerLike,
-    val requestUserExtractor: RequestUserExtractorLike
+  val requestUserExtractor: RequestUserExtractorLike,
+  val requestTokenExtractor: RequestTokenExtractorLike
 )(implicit val ec: ExecutionContext)
     extends RappelleBaseController {
 
@@ -47,6 +48,18 @@ class AuthController @Inject() (
       parseRequestJson[CreateUserRequestInput] { input =>
         logger.info(f"CreateUserRequestInput for ${input.email}")
         resourceHandler.createUser(input).map(x => Created(Json.toJson(x)))
+      }
+    }
+  }
+
+  def recoverToken() = Action.async { implicit request =>
+    import RequestTokenExtractorLike._
+    WithAuthErrorHandling {
+      requestTokenExtractor.extractToken(request).map {
+        case MissingCookie() => BadRequest(Json.obj("msg" -> "Missing cookie"))
+        case TokenNotFound() => BadRequest(Json.obj("msg" -> "Invalid cookie"))
+        case InvalidToken() => BadRequest(Json.obj("msg" -> "Found invalid token"))
+        case Found(token) => Ok(Json.toJson(token))
       }
     }
   }
