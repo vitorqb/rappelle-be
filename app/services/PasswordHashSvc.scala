@@ -7,6 +7,7 @@ import javax.crypto.SecretKeyFactory
   */
 trait PasswordHashSvcLike {
   def hash(input: String): String
+  def unhash(input: String): Option[String]
 }
 
 class PasswordHashSvc(salt: String) extends PasswordHashSvcLike {
@@ -21,10 +22,17 @@ class PasswordHashSvc(salt: String) extends PasswordHashSvcLike {
       .mkString
   }
 
+  override def unhash(input: String): Option[String] = ???
+
 }
 
 class FakePasswordHashSvc extends PasswordHashSvcLike {
 
   override def hash(input: String): String = input + "_HASHED"
+  override def unhash(input: String): Option[String] =
+    if (input.endsWith("_HASHED"))
+      Some(input.dropRight(7))
+    else
+      None
 
 }

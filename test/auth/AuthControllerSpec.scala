@@ -14,7 +14,7 @@ import play.api.mvc.Results
 import play.api.test.Helpers
 
 class AuthControllerSpec
-    extends PlaySpec 
+    extends PlaySpec
     with IdiomaticMockito
     with ArgumentMatchersSugar
     with Results {
@@ -82,7 +82,11 @@ class AuthControllerSpec
         val result = c.controller.postUser()(request)
         Helpers.status(result) must equal(CREATED)
         Helpers.contentAsJson(result) must equal(
-          Json.obj("id" -> 1, "email" -> createUserReqInput.email, "isActive" -> true)
+          Json.obj(
+            "id" -> 1,
+            "email" -> createUserReqInput.email,
+            "isActive" -> true
+          )
         )
       }
     }
