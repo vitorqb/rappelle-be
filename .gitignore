@@ -19,3 +19,4 @@ metals.sbt
 /.blackbox/pubring.gpg~
 /.blackbox/pubring.kbx~
 /.blackbox/secring.gpg
+/conf/rappelle-keyset.cfg
