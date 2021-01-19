@@ -16,3 +16,6 @@ metals.sbt
 /conf/application.dev.conf
 /deploy/docker-compose.dev.yaml
 /conf/application.funTest.conf
+/.blackbox/pubring.gpg~
+/.blackbox/pubring.kbx~
+/.blackbox/secring.gpg
