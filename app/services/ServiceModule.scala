@@ -10,6 +10,10 @@ import play.api.ConfigLoader
 import com.typesafe.config.Config
 import play.api.libs.ws.WSClient
 import scala.concurrent.ExecutionContext
+import play.api.Environment
+import com.google.crypto.tink.CleartextKeysetHandle
+import com.google.crypto.tink.JsonKeysetReader
+import com.google.crypto.tink.config.TinkConfig
 
 class ServiceModule extends AbstractModule {
 
@@ -74,6 +78,20 @@ class ServiceModule extends AbstractModule {
           f"Invalid value for services.email.type: ${x}"
         )
     }
+
+  @Provides
+  @com.google.inject.Singleton
+  def encryptionSvc(
+    env: Environment,
+    config: Configuration
+  ): EncryptionSvcLike = {
+    TinkConfig.register();
+    val fileName = config.get[String]("services.encryption.keysetFile")
+    val file = env.resourceAsStream(fileName).get
+    val keysetHandler =
+      CleartextKeysetHandle.read(JsonKeysetReader.withInputStream(file))
+    new EncryptionSvc(keysetHandler)
+  }
 }
 
 object ServiceConfigLoaders {

@@ -6,6 +6,7 @@ import com.google.inject.ImplementedBy
 import scala.concurrent.ExecutionContext
 import services.ClockLike
 import services.PasswordHashSvcLike
+import com.google.inject.Inject
 
 @ImplementedBy(classOf[RequestTokenExtractor])
 trait RequestTokenExtractorLike {
@@ -22,7 +23,7 @@ object RequestTokenExtractorLike {
   case class Found(token: Token) extends Result
 }
 
-class RequestTokenExtractor(
+class RequestTokenExtractor @Inject() (
     tokenRepo: AuthTokenRepositoryLike,
     clock: ClockLike,
     passwordHashSvc: PasswordHashSvcLike
@@ -34,14 +35,16 @@ class RequestTokenExtractor(
   override def extractToken[A](request: Request[A]): Future[Result] = {
     request.cookies.get(COOKIE_NAME) match {
       case None => Future.successful(MissingCookie())
-      case Some(cookie) => passwordHashSvc.unhash(cookie.value) match {
-        case None => Future.successful(TokenNotFound())
-        case Some(tokenVal) => tokenRepo.read(tokenVal).map {
-          case None => TokenNotFound()
-          case Some(token) if ! token.isValid(clock.now()) => InvalidToken()
-          case Some(token) if token.isValid(clock.now()) => Found(token)
+      case Some(cookie) =>
+        passwordHashSvc.unhash(cookie.value) match {
+          case None => Future.successful(TokenNotFound())
+          case Some(tokenVal) =>
+            tokenRepo.read(tokenVal).map {
+              case None                                       => TokenNotFound()
+              case Some(token) if !token.isValid(clock.now()) => InvalidToken()
+              case Some(token) if token.isValid(clock.now())  => Found(token)
+            }
         }
-      }
     }
   }
 

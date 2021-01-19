@@ -35,7 +35,8 @@ class RequestTokenExtractorSpec
 
     "return token not found if invalid cookie value" in {
       WithTestContext() { c =>
-        val request = FakeRequest().withCookies(Cookie(COOKIE_NAME, "foo_HASHED"))
+        val request =
+          FakeRequest().withCookies(Cookie(COOKIE_NAME, "foo_HASHED"))
         c.tokenRepo.read("foo") shouldReturn Future.successful(None)
         c.extractor.extractToken(request).futureValue must equal(
           TokenNotFound()
@@ -47,7 +48,8 @@ class RequestTokenExtractorSpec
       WithTestContext() { c =>
         val token = mock[Token]
         token.isValid(*) shouldReturn false
-        val request = FakeRequest().withCookies(Cookie(COOKIE_NAME, "foo_HASHED"))
+        val request =
+          FakeRequest().withCookies(Cookie(COOKIE_NAME, "foo_HASHED"))
         c.tokenRepo.read("foo") shouldReturn Future.successful(Some(token))
         c.extractor.extractToken(request).futureValue must equal(InvalidToken())
       }
@@ -57,7 +59,8 @@ class RequestTokenExtractorSpec
       WithTestContext() { c =>
         val token = mock[Token]
         token.isValid(*) shouldReturn true
-        val request = FakeRequest().withCookies(Cookie(COOKIE_NAME, "foo_HASHED"))
+        val request =
+          FakeRequest().withCookies(Cookie(COOKIE_NAME, "foo_HASHED"))
         c.tokenRepo.read("foo") shouldReturn Future.successful(Some(token))
         c.extractor.extractToken(request).futureValue must equal(Found(token))
       }

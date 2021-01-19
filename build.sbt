@@ -45,6 +45,7 @@ libraryDependencies ++= Seq(evolutions, jdbc, "org.playframework.anorm" %% "anor
 libraryDependencies += "org.postgresql" % "postgresql" % "42.2.18"
 libraryDependencies += "joda-time" % "joda-time" % "2.10.8"
 libraryDependencies += "com.typesafe.play" %% "play-json-joda" % "2.9.1"
+libraryDependencies += "com.google.crypto.tink" % "tink" % "1.5.0"
 
 libraryDependencies += jdbc % Test
 libraryDependencies += "org.scalatestplus.play" %% "scalatestplus-play" % "5.1.0" % Test
