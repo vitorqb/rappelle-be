@@ -70,6 +70,17 @@ class TokenCookieManagerSpec
 
   }
 
+  "cookie" should {
+    "generate a cookie" in {
+      WithTestContext() { c =>
+        val token = Token("token", DateTime.parse("2020-01-01"), 1)
+        val cookie = c.manager.cookie(token)
+        val cookieValue = Base64.getDecoder().decode(cookie.value)
+        c.encryptionSvc.decrypt(cookieValue) must equal("token")
+      }
+    }
+  }
+
   case class TestContext(
       manager: TokenCookieManager,
       tokenRepo: AuthTokenRepositoryLike,

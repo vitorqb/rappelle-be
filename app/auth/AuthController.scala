@@ -29,7 +29,9 @@ class AuthController @Inject() (
         logger.info(f"CreateTokenRequestInput for ${createTokenRequest.email}")
         resourceHandler
           .createToken(createTokenRequest)
-          .map(x => Ok(Json.toJson(x)))
+          .map(x =>
+            Ok(Json.toJson(x)).withCookies(tokenCookieManager.cookie(x))
+          )
       }
     }
   }

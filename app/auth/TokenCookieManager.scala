@@ -12,11 +12,14 @@ import scala.util.Try
 import scala.util.Failure
 import play.api.Logger
 import java.util.Base64
+import play.api.mvc.Cookie
+import play.api.mvc.Cookie.SameSite
 
 @ImplementedBy(classOf[TokenCookieManager])
 trait TokenCookieManagerLike {
   import TokenCookieManagerLike._
   def extractToken[A](request: Request[A]): Future[Result]
+  def cookie(token: Token): Cookie
 }
 
 object TokenCookieManagerLike {
@@ -55,6 +58,15 @@ class TokenCookieManager @Inject() (
         }
       }
     }
+  }
+
+  override def cookie(token: Token): Cookie = {
+    Cookie(
+      COOKIE_NAME,
+      Base64.getEncoder().encodeToString(encryptionSvc.encrypt(token.value)),
+      httpOnly = true,
+      sameSite = Some(SameSite.Strict)
+    )
   }
 
 }

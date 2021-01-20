@@ -124,16 +124,12 @@ class AuthFunSpec extends PlaySpec with ScalaFutures {
         pingResult.status must equal(204)
 
         val userResult = c
-          .request("/api/auth/user")
+          .request("/api/auth/token")
           .withCookies(cookie)
           .execute()
           .futureValue
         userResult.json must equal(
-          Json.obj(
-            "id" -> 1,
-            "email" -> newUserEmail,
-            "isActive" -> true
-          )
+          Json.obj("value" -> c.token, "expiresAt" -> c.expiresAt)
         )
       }
     }
