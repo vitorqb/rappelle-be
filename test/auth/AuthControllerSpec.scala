@@ -113,8 +113,8 @@ class AuthControllerSpec
     "return 400 if no cookie" in {
       WithTestContext() { c =>
         val request = FakeRequest(routes.AuthController.recoverToken())
-        c.requestTokenExtractor.extractToken(request) shouldReturn Future
-          .successful(RequestTokenExtractorLike.MissingCookie())
+        c.tokenCookieManager.extractToken(request) shouldReturn Future
+          .successful(TokenCookieManagerLike.MissingCookie())
         val result = c.controller.recoverToken()(request)
         Helpers.status(result) must equal(400)
         Helpers.contentAsJson(result) must equal(
@@ -125,8 +125,8 @@ class AuthControllerSpec
     "return 400 if token not found" in {
       WithTestContext() { c =>
         val request = FakeRequest(routes.AuthController.recoverToken())
-        c.requestTokenExtractor.extractToken(request) shouldReturn Future
-          .successful(RequestTokenExtractorLike.TokenNotFound())
+        c.tokenCookieManager.extractToken(request) shouldReturn Future
+          .successful(TokenCookieManagerLike.TokenNotFound())
         val result = c.controller.recoverToken()(request)
         Helpers.status(result) must equal(400)
         Helpers.contentAsJson(result) must equal(
@@ -137,8 +137,8 @@ class AuthControllerSpec
     "return 400 if invalid token" in {
       WithTestContext() { c =>
         val request = FakeRequest(routes.AuthController.recoverToken())
-        c.requestTokenExtractor.extractToken(request) shouldReturn Future
-          .successful(RequestTokenExtractorLike.InvalidToken())
+        c.tokenCookieManager.extractToken(request) shouldReturn Future
+          .successful(TokenCookieManagerLike.InvalidToken())
         val result = c.controller.recoverToken()(request)
         Helpers.status(result) must equal(400)
         Helpers.contentAsJson(result) must equal(
@@ -149,8 +149,8 @@ class AuthControllerSpec
     "return 200 with token" in {
       WithTestContext() { c =>
         val request = FakeRequest(routes.AuthController.recoverToken())
-        c.requestTokenExtractor.extractToken(request) shouldReturn Future
-          .successful(RequestTokenExtractorLike.Found(c.token))
+        c.tokenCookieManager.extractToken(request) shouldReturn Future
+          .successful(TokenCookieManagerLike.Found(c.token))
         val result = c.controller.recoverToken()(request)
         Helpers.status(result) must equal(200)
         Helpers.contentAsJson(result) must equal(Json.toJson(c.token))
@@ -226,7 +226,7 @@ class AuthControllerSpec
       controller: AuthController,
       user: User,
       requestUserExtractor: RequestUserExtractorLike,
-      requestTokenExtractor: RequestTokenExtractorLike,
+      tokenCookieManager: TokenCookieManagerLike,
       emailConfirmationKey: String
   )
 
@@ -244,12 +244,12 @@ class AuthControllerSpec
       val token = Token("value", DateTime.parse("2020-01-01"), user.id)
       val resourceHandler = mock[AuthResourceHandlerLike]
       val requestUserExtractor = new FakeRequestUserExtractor(userFn(user))
-      val requestTokenExtractor = mock[RequestTokenExtractorLike]
+      val tokenCookieManager = mock[TokenCookieManagerLike]
       val controller = new AuthController(
         stubControllerComponents(),
         resourceHandler,
         requestUserExtractor,
-        requestTokenExtractor
+        tokenCookieManager
       )
       val context =
         TestContext(
@@ -259,7 +259,7 @@ class AuthControllerSpec
           controller,
           user,
           requestUserExtractor,
-          requestTokenExtractor,
+          tokenCookieManager,
           emailConfirmationKey
         )
       block(context)

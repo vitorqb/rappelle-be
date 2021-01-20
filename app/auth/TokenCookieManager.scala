@@ -5,16 +5,21 @@ import scala.concurrent.Future
 import com.google.inject.ImplementedBy
 import scala.concurrent.ExecutionContext
 import services.ClockLike
-import services.PasswordHashSvcLike
 import com.google.inject.Inject
+import services.EncryptionSvcLike
+import scala.util.Success
+import scala.util.Try
+import scala.util.Failure
+import play.api.Logger
+import java.util.Base64
 
-@ImplementedBy(classOf[RequestTokenExtractor])
-trait RequestTokenExtractorLike {
-  import RequestTokenExtractorLike._
+@ImplementedBy(classOf[TokenCookieManager])
+trait TokenCookieManagerLike {
+  import TokenCookieManagerLike._
   def extractToken[A](request: Request[A]): Future[Result]
 }
 
-object RequestTokenExtractorLike {
+object TokenCookieManagerLike {
   val COOKIE_NAME = "RappelleAuth"
   sealed trait Result
   case class MissingCookie() extends Result
@@ -23,28 +28,32 @@ object RequestTokenExtractorLike {
   case class Found(token: Token) extends Result
 }
 
-class RequestTokenExtractor @Inject() (
+class TokenCookieManager @Inject() (
     tokenRepo: AuthTokenRepositoryLike,
     clock: ClockLike,
-    passwordHashSvc: PasswordHashSvcLike
+    encryptionSvc: EncryptionSvcLike
 )(implicit val ec: ExecutionContext)
-    extends RequestTokenExtractorLike {
+    extends TokenCookieManagerLike {
 
-  import RequestTokenExtractorLike._
+  import TokenCookieManagerLike._
+  val logger = Logger(getClass())
 
   override def extractToken[A](request: Request[A]): Future[Result] = {
     request.cookies.get(COOKIE_NAME) match {
       case None => Future.successful(MissingCookie())
-      case Some(cookie) =>
-        passwordHashSvc.unhash(cookie.value) match {
-          case None => Future.successful(TokenNotFound())
-          case Some(tokenVal) =>
+      case Some(cookie) => {
+        Try {
+          encryptionSvc.decrypt(Base64.getDecoder().decode(cookie.value))
+        } match {
+          case Failure(e: Throwable) => Future.successful(TokenNotFound())
+          case Success(tokenVal) =>
             tokenRepo.read(tokenVal).map {
               case None                                       => TokenNotFound()
               case Some(token) if !token.isValid(clock.now()) => InvalidToken()
               case Some(token) if token.isValid(clock.now())  => Found(token)
             }
         }
+      }
     }
   }
 

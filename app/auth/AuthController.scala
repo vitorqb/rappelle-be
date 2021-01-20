@@ -16,7 +16,7 @@ class AuthController @Inject() (
     val controllerComponents: ControllerComponents,
     val resourceHandler: AuthResourceHandlerLike,
     val requestUserExtractor: RequestUserExtractorLike,
-    val requestTokenExtractor: RequestTokenExtractorLike
+    val tokenCookieManager: TokenCookieManagerLike
 )(implicit val ec: ExecutionContext)
     extends RappelleBaseController {
 
@@ -53,9 +53,9 @@ class AuthController @Inject() (
   }
 
   def recoverToken() = Action.async { implicit request =>
-    import RequestTokenExtractorLike._
+    import TokenCookieManagerLike._
     WithAuthErrorHandling {
-      requestTokenExtractor.extractToken(request).map {
+      tokenCookieManager.extractToken(request).map {
         case MissingCookie() => BadRequest(Json.obj("msg" -> "Missing cookie"))
         case TokenNotFound() => BadRequest(Json.obj("msg" -> "Invalid cookie"))
         case InvalidToken() =>

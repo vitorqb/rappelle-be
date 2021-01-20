@@ -11,23 +11,25 @@ import org.mockito.ArgumentMatchersSugar
 import services.ClockLike
 import services.FakeClock
 import org.joda.time.DateTime
-import services.FakePasswordHashSvc
+import services.FakeEncriptionSvc
+import services.EncryptionSvcLike
+import java.util.Base64
 
-class RequestTokenExtractorSpec
+class TokenCookieManagerSpec
     extends PlaySpec
     with IdiomaticMockito
     with ArgumentMatchersSugar
     with ScalaFutures {
 
   implicit val ec = ExecutionContext.global
-  import RequestTokenExtractorLike._
+  import TokenCookieManagerLike._
 
   "extractToken" should {
 
     "return missing cookie if no cookie" in {
       WithTestContext() { c =>
         val request = FakeRequest()
-        c.extractor.extractToken(request).futureValue must equal(
+        c.manager.extractToken(request).futureValue must equal(
           MissingCookie()
         )
       }
@@ -36,9 +38,9 @@ class RequestTokenExtractorSpec
     "return token not found if invalid cookie value" in {
       WithTestContext() { c =>
         val request =
-          FakeRequest().withCookies(Cookie(COOKIE_NAME, "foo_HASHED"))
-        c.tokenRepo.read("foo") shouldReturn Future.successful(None)
-        c.extractor.extractToken(request).futureValue must equal(
+          FakeRequest().withCookies(Cookie(COOKIE_NAME, c.encryptedToken))
+        c.tokenRepo.read("token") shouldReturn Future.successful(None)
+        c.manager.extractToken(request).futureValue must equal(
           TokenNotFound()
         )
       }
@@ -49,9 +51,9 @@ class RequestTokenExtractorSpec
         val token = mock[Token]
         token.isValid(*) shouldReturn false
         val request =
-          FakeRequest().withCookies(Cookie(COOKIE_NAME, "foo_HASHED"))
-        c.tokenRepo.read("foo") shouldReturn Future.successful(Some(token))
-        c.extractor.extractToken(request).futureValue must equal(InvalidToken())
+          FakeRequest().withCookies(Cookie(COOKIE_NAME, c.encryptedToken))
+        c.tokenRepo.read("token") shouldReturn Future.successful(Some(token))
+        c.manager.extractToken(request).futureValue must equal(InvalidToken())
       }
     }
 
@@ -60,17 +62,19 @@ class RequestTokenExtractorSpec
         val token = mock[Token]
         token.isValid(*) shouldReturn true
         val request =
-          FakeRequest().withCookies(Cookie(COOKIE_NAME, "foo_HASHED"))
-        c.tokenRepo.read("foo") shouldReturn Future.successful(Some(token))
-        c.extractor.extractToken(request).futureValue must equal(Found(token))
+          FakeRequest().withCookies(Cookie(COOKIE_NAME, c.encryptedToken))
+        c.tokenRepo.read("token") shouldReturn Future.successful(Some(token))
+        c.manager.extractToken(request).futureValue must equal(Found(token))
       }
     }
 
   }
 
   case class TestContext(
-      extractor: RequestTokenExtractor,
+      manager: TokenCookieManager,
       tokenRepo: AuthTokenRepositoryLike,
+      encryptionSvc: EncryptionSvcLike,
+      encryptedToken: String,
       clock: ClockLike
   )
 
@@ -78,15 +82,20 @@ class RequestTokenExtractorSpec
     def apply()(block: TestContext => Any): Any = {
       val tokenRepo = mock[AuthTokenRepositoryLike]
       val clock = new FakeClock(DateTime.parse("2020-01-01T00:00:00"))
+      val encryptionSvc = new FakeEncriptionSvc
+      val encryptedToken =
+        Base64.getEncoder().encodeToString(encryptionSvc.encrypt("token"))
       block(
         TestContext(
-          extractor = new RequestTokenExtractor(
+          manager = new TokenCookieManager(
             tokenRepo,
             clock,
-            new FakePasswordHashSvc
+            encryptionSvc
           ),
           tokenRepo = tokenRepo,
-          clock = clock
+          clock = clock,
+          encryptedToken = encryptedToken,
+          encryptionSvc = encryptionSvc
         )
       )
     }

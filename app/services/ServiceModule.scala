@@ -82,15 +82,26 @@ class ServiceModule extends AbstractModule {
   @Provides
   @com.google.inject.Singleton
   def encryptionSvc(
-    env: Environment,
-    config: Configuration
+      env: Environment,
+      config: Configuration
   ): EncryptionSvcLike = {
-    TinkConfig.register();
-    val fileName = config.get[String]("services.encryption.keysetFile")
-    val file = env.resourceAsStream(fileName).get
-    val keysetHandler =
-      CleartextKeysetHandle.read(JsonKeysetReader.withInputStream(file))
-    new EncryptionSvc(keysetHandler)
+    config.get[String]("services.encryption.type") match {
+      case "EncryptionSvc" => {
+        TinkConfig.register();
+        val fileName = config.get[String]("services.encryption.keysetFile")
+        val file = env.resourceAsStream(fileName).get
+        val keysetHandler =
+          CleartextKeysetHandle.read(JsonKeysetReader.withInputStream(file))
+        logger.info("Providing EncryptionSvc")
+        new EncryptionSvc(keysetHandler)
+      }
+      case "FakeEncryptionSvc" => {
+        logger.info("Providing FakeEncriptionSvc")
+        new FakeEncriptionSvc
+      }
+      case _ =>
+        throw new RuntimeException("Invalid value for services.encryption.type")
+    }
   }
 }
 
