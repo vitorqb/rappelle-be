@@ -65,7 +65,8 @@ class TokenCookieManager @Inject() (
       COOKIE_NAME,
       Base64.getEncoder().encodeToString(encryptionSvc.encrypt(token.value)),
       httpOnly = true,
-      sameSite = Some(SameSite.Strict)
+      sameSite = Some(SameSite.Strict),
+      path = "/api/auth/token"
     )
   }
 
