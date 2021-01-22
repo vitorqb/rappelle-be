@@ -109,6 +109,22 @@ class AuthControllerSpec
     }
   }
 
+  "getUser" should {
+    "recover user" in {
+      WithTestContext() { c =>
+        val result = c.controller.getUser()(FakeRequest())
+        Helpers.status(result) must equal(200)
+        Helpers.contentAsJson(result) must equal(Json.toJson(c.user))
+      }
+    }
+    "return 400 if no user" in {
+      WithTestContext((_: User) => None) { c =>
+        val result = c.controller.getUser()(FakeRequest())
+        Helpers.status(result) must equal(401)
+      }
+    }
+  }
+
   "recoverToken" should {
     "return 400 if no cookie" in {
       WithTestContext() { c =>

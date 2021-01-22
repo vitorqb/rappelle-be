@@ -54,6 +54,15 @@ class AuthController @Inject() (
     }
   }
 
+  def getUser() = Action.async { implicit request =>
+    WithAuthErrorHandling {
+      requestUserExtractor.withUser(request) { user =>
+        logger.info(f"Get user ${user.email}")
+        Future.successful(Ok(Json.toJson(user)))
+      }
+    }
+  }
+
   def recoverToken() = Action.async { implicit request =>
     import TokenCookieManagerLike._
     WithAuthErrorHandling {
