@@ -65,9 +65,7 @@ object TestUtils {
   val testServerUrl = s"http://localhost:${testServerPort}"
 }
 
-
-/**
-  * Provides a test context with an ulogged user
+/** Provides a test context with an ulogged user
   */
 case class AuthContext(
     app: Application,

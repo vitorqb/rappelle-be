@@ -8,9 +8,7 @@ class RemindersFunSpec extends PlaySpec {
 
   "create reminder flow" should {
     "create and get a reminder for a given user" in {
-      WithTestContext() { c =>
-
-      }
+      WithTestContext() { c => }
     }
   }
 
