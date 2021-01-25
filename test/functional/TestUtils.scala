@@ -7,6 +7,8 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.test.Helpers
 import play.api.Logger
 import com.typesafe.config.ConfigFactory
+import play.api.libs.ws.WSClient
+import play.api.test.TestServer
 
 object WithTestApp {
 
@@ -61,4 +63,67 @@ object WithTestDb {
 object TestUtils {
   val testServerPort = 10301
   val testServerUrl = s"http://localhost:${testServerPort}"
+}
+
+
+/**
+  * Provides a test context with an ulogged user
+  */
+case class UnloggedUserContext(
+    app: Application,
+    email: String,
+    password: String,
+    token: String,
+    expiresAt: String,
+    confirmationKey: String,
+    id: Int
+) {
+  def request(url: String) =
+    app.injector.instanceOf[WSClient].url(s"${TestUtils.testServerUrl}${url}")
+}
+
+object WithUnloggedUserContext {
+
+  lazy val id = 123
+  lazy val email = "a@b.c"
+  lazy val password = "abc"
+  lazy val token = "TOKEN"
+  lazy val expiresAt = "2020-10-11T00:00:00.000Z"
+  lazy val now = "2020-01-11T00:00:00.000Z"
+  lazy val confirmationKey = "confirmationkey"
+  lazy val appConf = Map(
+    "auth.fakeUser.id" -> id,
+    "auth.fakeUser.email" -> email,
+    "auth.fakeUser.password" -> password,
+    "auth.fakeUser.emailConfirmed" -> true,
+    "auth.fakeToken.value" -> token,
+    "auth.fakeToken.expiresAt" -> expiresAt,
+    "auth.fakeEmailConfirmationSvc.confirmationKey" -> confirmationKey,
+    "auth.fakeEmailConfirmationSvc.userId" -> id,
+    "services.clock.now" -> now
+  )
+
+  def apply()(block: UnloggedUserContext => Any): Any = apply(identity)(block)
+
+  def apply(
+      configFn: Map[String, Any] => Map[String, Any]
+  )(
+      block: UnloggedUserContext => Any
+  ): Any = {
+    WithTestApp(configFn(appConf)) { app =>
+      Helpers.running(TestServer(TestUtils.testServerPort, app)) {
+        val context =
+          UnloggedUserContext(
+            app,
+            email,
+            password,
+            token,
+            expiresAt,
+            confirmationKey,
+            id
+          )
+        block(context)
+      }
+    }
+  }
 }
