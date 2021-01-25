@@ -37,8 +37,7 @@ class AuthFunSpec extends PlaySpec with ScalaFutures {
     "get a 200 on the ping endpoint if logged in" in {
       WithAuthContext() { c =>
         val getResult = c
-          .request(s"/api/auth/ping")
-          .withHttpHeaders("Authorization" -> s"Bearer ${c.token}")
+          .requestWithToken(s"/api/auth/ping")
           .execute()
           .futureValue
         getResult.status mustBe 204
@@ -50,8 +49,7 @@ class AuthFunSpec extends PlaySpec with ScalaFutures {
         _.updated("auth.fakeUser.emailConfirmed", false)
       ) { c =>
         val getResult = c
-          .request(s"/api/auth/ping")
-          .withHttpHeaders("Authorization" -> s"Bearer ${c.token}")
+          .requestWithToken(s"/api/auth/ping")
           .execute()
           .futureValue
         getResult.status mustBe 403
@@ -114,8 +112,7 @@ class AuthFunSpec extends PlaySpec with ScalaFutures {
 
         val token = (tokenResult.json \ "value").as[String]
         val pingResult = c
-          .request("/api/auth/ping")
-          .withHttpHeaders("Authorization" -> s"Bearer $token")
+          .requestWithToken("/api/auth/ping")
           .execute()
           .futureValue
         pingResult.status must equal(204)

@@ -78,8 +78,13 @@ case class AuthContext(
     confirmationKey: String,
     id: Int
 ) {
-  def request(url: String) =
-    app.injector.instanceOf[WSClient].url(s"${TestUtils.testServerUrl}${url}")
+
+  lazy val wsclient = app.injector.instanceOf[WSClient]
+
+  def request(url: String) = wsclient.url(s"${TestUtils.testServerUrl}${url}")
+
+  def requestWithToken(url: String) =
+    request(url).withHttpHeaders("Authorization" -> s"Bearer $token")
 }
 
 object WithAuthContext {
