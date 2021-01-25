@@ -8,7 +8,7 @@ import org.scalatest.time.Millis
 import org.scalatest.time.Span
 import play.api.libs.json.Json
 
-import functional.utils.WithUnloggedUserContext
+import functional.utils.WithAuthContext
 
 class AuthFunSpec extends PlaySpec with ScalaFutures {
 
@@ -18,7 +18,7 @@ class AuthFunSpec extends PlaySpec with ScalaFutures {
   "Token flow" should {
 
     "get a token for an user" in {
-      WithUnloggedUserContext() { c =>
+      WithAuthContext() { c =>
         val postResult = c
           .request(s"/api/auth/token")
           .withBody(Json.obj("email" -> c.email, "password" -> c.password))
@@ -35,7 +35,7 @@ class AuthFunSpec extends PlaySpec with ScalaFutures {
     }
 
     "get a 200 on the ping endpoint if logged in" in {
-      WithUnloggedUserContext() { c =>
+      WithAuthContext() { c =>
         val getResult = c
           .request(s"/api/auth/ping")
           .withHttpHeaders("Authorization" -> s"Bearer ${c.token}")
@@ -46,7 +46,7 @@ class AuthFunSpec extends PlaySpec with ScalaFutures {
     }
 
     "get a 403 on the ping endpoint if email not confirmed" in {
-      WithUnloggedUserContext(
+      WithAuthContext(
         _.updated("auth.fakeUser.emailConfirmed", false)
       ) { c =>
         val getResult = c
@@ -60,7 +60,7 @@ class AuthFunSpec extends PlaySpec with ScalaFutures {
     }
 
     "get a 401 if invalid token" in {
-      WithUnloggedUserContext() { c =>
+      WithAuthContext() { c =>
         val getResult = c
           .request("/api/auth/ping")
           .withHttpHeaders("Authorization" -> s"Bearer FALSETOKEN")
@@ -74,7 +74,7 @@ class AuthFunSpec extends PlaySpec with ScalaFutures {
   "Create user flow" should {
 
     "create an user, confirm email, get a token, and ping" in {
-      WithUnloggedUserContext() { c =>
+      WithAuthContext() { c =>
         val newUserEmail = "new@user.email"
         val newUserPass = "newUserPass"
         val createResult = c

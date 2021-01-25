@@ -69,7 +69,7 @@ object TestUtils {
 /**
   * Provides a test context with an ulogged user
   */
-case class UnloggedUserContext(
+case class AuthContext(
     app: Application,
     email: String,
     password: String,
@@ -82,7 +82,7 @@ case class UnloggedUserContext(
     app.injector.instanceOf[WSClient].url(s"${TestUtils.testServerUrl}${url}")
 }
 
-object WithUnloggedUserContext {
+object WithAuthContext {
 
   lazy val id = 123
   lazy val email = "a@b.c"
@@ -103,17 +103,17 @@ object WithUnloggedUserContext {
     "services.clock.now" -> now
   )
 
-  def apply()(block: UnloggedUserContext => Any): Any = apply(identity)(block)
+  def apply()(block: AuthContext => Any): Any = apply(identity)(block)
 
   def apply(
       configFn: Map[String, Any] => Map[String, Any]
   )(
-      block: UnloggedUserContext => Any
+      block: AuthContext => Any
   ): Any = {
     WithTestApp(configFn(appConf)) { app =>
       Helpers.running(TestServer(TestUtils.testServerPort, app)) {
         val context =
-          UnloggedUserContext(
+          AuthContext(
             app,
             email,
             password,
