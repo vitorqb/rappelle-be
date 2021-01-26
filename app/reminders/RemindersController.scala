@@ -6,6 +6,9 @@ import auth.RequestUserExtractorLike
 import scala.concurrent.ExecutionContext
 import play.api.Logger
 import common.RappelleBaseController
+import auth.WithAuthErrorHandling
+import play.api.libs.json.Json
+import ReminderJsonSerializers._
 
 @com.google.inject.Singleton
 class RemindersController @Inject() (
@@ -18,7 +21,12 @@ class RemindersController @Inject() (
   val logger = Logger(getClass())
 
   def listReminders = Action.async { implicit request =>
-    ???
+    WithAuthErrorHandling {
+      requestUserExtractor.withUser(request) { user =>
+        val req = ListReminderRequest(user)
+        resourceHandler.listReminders(req).map(x => Ok(Json.toJson(x)))
+      }
+    }
   }
 
   def postReminder = Action.async(parse.tolerantJson) { implicit request =>
