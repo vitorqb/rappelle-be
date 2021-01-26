@@ -1,21 +1,13 @@
 package auth
 
-import org.scalatestplus.play.PlaySpec
 import functional.utils.WithTestApp
 import functional.utils.WithTestDb
 import org.scalatest.concurrent.ScalaFutures
 import services.FakeUniqueIdGenerator
-import scala.concurrent.ExecutionContext
 import services.FakePasswordHashSvc
-import org.scalatest.time.Span
-import org.scalatest.time.Seconds
-import org.scalatest.time.Millis
+import functional.utils.FunctionalSpec
 
-class UserRepositoryFunSpec extends PlaySpec with ScalaFutures {
-
-  implicit val defaultPatience =
-    PatienceConfig(timeout = Span(2, Seconds), interval = Span(5, Millis))
-  implicit val ec = ExecutionContext.global
+class UserRepositoryFunSpec extends FunctionalSpec with ScalaFutures {
 
   "create and read an user with email" in {
     WithTestContext() { c =>

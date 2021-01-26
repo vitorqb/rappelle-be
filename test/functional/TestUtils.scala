@@ -9,6 +9,12 @@ import play.api.Logger
 import com.typesafe.config.ConfigFactory
 import play.api.libs.ws.WSClient
 import play.api.test.TestServer
+import org.scalatest.concurrent.ScalaFutures
+import org.scalatestplus.play.PlaySpec
+import org.scalatest.time.Seconds
+import org.scalatest.time.Millis
+import org.scalatest.time.Span
+import scala.concurrent.ExecutionContext
 
 object WithTestApp {
 
@@ -129,4 +135,13 @@ object WithAuthContext {
       }
     }
   }
+}
+
+trait FunctionalSpec extends PlaySpec with ScalaFutures {
+
+  implicit val ec = ExecutionContext.global
+
+  implicit val defaultPatience =
+    PatienceConfig(timeout = Span(2, Seconds), interval = Span(5, Millis))
+
 }

@@ -1,16 +1,14 @@
 package auth
 
-import org.scalatestplus.play.PlaySpec
 import org.joda.time.DateTime
 import org.scalatest.concurrent.ScalaFutures
 import functional.utils.WithTestApp
 import functional.utils.WithTestDb
 import scala.concurrent.ExecutionContext
 import services.UniqueIdGenerator
+import functional.utils.FunctionalSpec
 
-class AuthTokenRepositoryFunSpec extends PlaySpec with ScalaFutures {
-
-  implicit val ec: ExecutionContext = ExecutionContext.global
+class AuthTokenRepositoryFunSpec extends FunctionalSpec with ScalaFutures {
 
   "create and get token" in {
     WithTestContext { c =>
@@ -39,7 +37,6 @@ class AuthTokenRepositoryFunSpec extends PlaySpec with ScalaFutures {
 
   object WithTestContext {
 
-    implicit val ec: ExecutionContext = ExecutionContext.global
     val value = "abc123"
     val user = User(123, "email@email.email", true)
     val expiresAt = DateTime.parse("2020-01-01")

@@ -1,19 +1,12 @@
 package auth
 
-import org.scalatestplus.play._
-
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.time.Seconds
-import org.scalatest.time.Millis
-import org.scalatest.time.Span
 import play.api.libs.json.Json
 
 import functional.utils.WithAuthContext
+import functional.utils.FunctionalSpec
 
-class AuthFunSpec extends PlaySpec with ScalaFutures {
-
-  implicit val defaultPatience =
-    PatienceConfig(timeout = Span(2, Seconds), interval = Span(5, Millis))
+class AuthFunSpec extends FunctionalSpec with ScalaFutures {
 
   "Token flow" should {
 
