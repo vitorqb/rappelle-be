@@ -11,7 +11,7 @@ object ReminderJsonSerializers {
 
   implicit val reminderWrites: Writes[Reminder] =
     (
-      (JsPath \ "id").write[String] and
+      (JsPath \ "id").write[Int] and
         (JsPath \ "title").write[String] and
         (JsPath \ "datetime").write[DateTime]
     )(unlift(Reminder.unapply))

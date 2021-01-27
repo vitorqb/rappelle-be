@@ -10,7 +10,7 @@ class ReminderJsonSerializersSpec extends PlaySpec {
   "listReminderResponseWrites" should {
     "serialize a response" in {
       val reminder1 = Fixtures.aReminder
-      val reminder2 = Fixtures.aReminder.copy(id = "2")
+      val reminder2 = Fixtures.aReminder.copy(id = 2)
       val response = ListReminderResponse(Seq(reminder1, reminder2))
       Json.toJson(response) must equal(
         Json.obj(
