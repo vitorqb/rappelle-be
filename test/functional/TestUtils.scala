@@ -121,17 +121,19 @@ object WithAuthContext {
   ): Any = {
     WithTestApp(configFn(appConf)) { app =>
       Helpers.running(TestServer(TestUtils.testServerPort, app)) {
-        val context =
-          AuthContext(
-            app,
-            email,
-            password,
-            token,
-            expiresAt,
-            confirmationKey,
-            id
-          )
-        block(context)
+        WithTestDb(app) { _ =>
+          val context =
+            AuthContext(
+              app,
+              email,
+              password,
+              token,
+              expiresAt,
+              confirmationKey,
+              id
+            )
+          block(context)
+        }
       }
     }
   }

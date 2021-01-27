@@ -40,9 +40,9 @@ class RemindersResourceHandlerSpec
 
   case class TestContext(
       listReq: ListReminderRequest,
-    createReq: CreateReminderRequest,
+      createReq: CreateReminderRequest,
       handler: RemindersResourceHandler,
-    repo: RemindersRepositoryLike
+      repo: RemindersRepositoryLike
   )
 
   object WithTestContext {
