@@ -4,14 +4,15 @@
 CREATE TABLE reminders (
        id int PRIMARY KEY NOT NULL,
        userId int NOT NULL,
-       title varchar UNIQUE NOT NULL,
+       title varchar NOT NULL,
        datetime timestamp NOT NULL
 );
 
 CREATE UNIQUE INDEX remindersId ON reminders (id);
-CREATE UNIQUE INDEX reminders_userId ON reminders (userId);
+CREATE INDEX reminders_userId ON reminders (userId);
 
 
 -- !Downs
 DROP TABLE reminders;
 DROP INDEX IF EXISTS remindersId;
+DROP INDEX IF EXISTS reminders_userId;
