@@ -26,10 +26,23 @@ class RemindersResourceHandlerSpec
     }
   }
 
+  "createReminder" should {
+    "request creation from the repository" in {
+      WithTestContext() { c =>
+        c.repo.create(c.createReq) shouldReturn Future.successful(
+          Fixtures.aReminder
+        )
+        val result = c.handler.createReminder(c.createReq).futureValue
+        result must equal(Fixtures.aReminder)
+      }
+    }
+  }
+
   case class TestContext(
       listReq: ListReminderRequest,
+    createReq: CreateReminderRequest,
       handler: RemindersResourceHandler,
-      repo: RemindersRepositoryLike
+    repo: RemindersRepositoryLike
   )
 
   object WithTestContext {
@@ -39,6 +52,11 @@ class RemindersResourceHandlerSpec
       block(
         TestContext(
           listReq = ListReminderRequest(Fixtures.anUser),
+          createReq = CreateReminderRequest(
+            Fixtures.anUser,
+            Fixtures.aReminder.title,
+            Fixtures.aReminder.datetime
+          ),
           handler = new RemindersResourceHandler(repo),
           repo = repo
         )

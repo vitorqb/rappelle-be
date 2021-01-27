@@ -24,6 +24,6 @@ class RemindersResourceHandler @Inject() (repo: RemindersRepositoryLike)(
   }
 
   override def createReminder(req: CreateReminderRequest): Future[Reminder] =
-    ???
+    repo.create(req)
 
 }
