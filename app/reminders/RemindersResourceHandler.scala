@@ -9,6 +9,7 @@ import scala.concurrent.ExecutionContext
 trait RemindersResourceHandlerLike {
 
   def listReminders(req: ListReminderRequest): Future[ListReminderResponse]
+  def createReminder(req: CreateReminderRequest): Future[Reminder]
 
 }
 
@@ -21,5 +22,8 @@ class RemindersResourceHandler @Inject() (repo: RemindersRepositoryLike)(
   ): Future[ListReminderResponse] = {
     repo.list(req).map(x => ListReminderResponse(x))
   }
+
+  override def createReminder(req: CreateReminderRequest): Future[Reminder] =
+    ???
 
 }

@@ -30,7 +30,21 @@ class RemindersController @Inject() (
   }
 
   def postReminder = Action.async(parse.tolerantJson) { implicit request =>
-    ???
+    WithAuthErrorHandling {
+      requestUserExtractor.withUser(request) { user =>
+        parseRequestJson[CreateReminderRequestInput] { input =>
+          resourceHandler.createReminder(
+            CreateReminderRequest(
+              user = user,
+              title = input.title,
+              datetime = input.datetime
+            )
+          ) map { reminder =>
+            Ok(Json.toJson(reminder))
+          }
+        }
+      }
+    }
   }
 
 }

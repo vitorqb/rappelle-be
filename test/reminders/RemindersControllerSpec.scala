@@ -11,6 +11,8 @@ import play.api.test.Helpers.defaultAwaitTimeout
 import auth.FakeRequestUserExtractor
 import scala.concurrent.ExecutionContext
 import ReminderJsonSerializers._
+import org.joda.time.DateTime
+import play.api.libs.json.JodaWrites._
 
 class RemindersControllerSpec extends PlaySpec with IdiomaticMockito {
 
@@ -34,10 +36,35 @@ class RemindersControllerSpec extends PlaySpec with IdiomaticMockito {
 
   }
 
+  "postReminder" should {
+
+    "ask the handler to create the reminder" in {
+      WithTestContext() { c =>
+        c.handler.createReminder(c.createRequest) shouldReturn Future
+          .successful(
+            Fixtures.aReminder
+          )
+        val request = FakeRequest().withBody(
+          Json.obj(
+            "title" -> Fixtures.aReminder.title,
+            "datetime" -> Fixtures.aReminder.datetime
+          )
+        )
+        val response = c.controller.postReminder()(request)
+        Helpers.status(response) must equal(200)
+        Helpers.contentAsJson(response) must equal(
+          Json.toJson(Fixtures.aReminder)
+        )
+      }
+    }
+
+  }
+
   case class TestContext(
       handler: RemindersResourceHandlerLike,
       controller: RemindersController,
-      listRequest: ListReminderRequest
+      listRequest: ListReminderRequest,
+      createRequest: CreateReminderRequest
   )
   object WithTestContext {
     def apply()(block: TestContext => Any): Any = {
@@ -50,7 +77,12 @@ class RemindersControllerSpec extends PlaySpec with IdiomaticMockito {
             handler,
             new FakeRequestUserExtractor(Some(Fixtures.anUser))
           ),
-          listRequest = ListReminderRequest(Fixtures.anUser)
+          listRequest = ListReminderRequest(Fixtures.anUser),
+          createRequest = CreateReminderRequest(
+            Fixtures.anUser,
+            Fixtures.aReminder.title,
+            Fixtures.aReminder.datetime
+          )
         )
       )
     }

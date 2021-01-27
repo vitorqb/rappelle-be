@@ -22,4 +22,10 @@ object ReminderJsonSerializers {
         .write[Seq[Reminder]]
     )(x => (x.items, x.items))
 
+  implicit val createReminderRequestInputReader
+      : Reads[CreateReminderRequestInput] =
+    (
+      (JsPath \ "title").read[String] and (JsPath \ "datetime").read[DateTime]
+    )((x1, x2) => CreateReminderRequestInput(x1, x2))
+
 }
