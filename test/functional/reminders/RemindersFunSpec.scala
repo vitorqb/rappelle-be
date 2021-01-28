@@ -43,7 +43,11 @@ class RemindersFunSpec extends FunctionalSpec with ScalaFutures {
           .futureValue
         remindersAfter.status must equal(200)
         remindersAfter.json must equal(
-          Json.obj("items" -> Json.arr(reminder.json))
+          Json.obj(
+            "items" -> Json.arr(reminder.json),
+            "page" -> 1,
+            "totalCount" -> 1,
+          )
         )
       }
     }

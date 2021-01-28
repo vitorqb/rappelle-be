@@ -19,8 +19,11 @@ class RemindersResourceHandler @Inject() (repo: RemindersRepositoryLike)(
 
   override def listReminders(
       req: ListReminderRequest
-  ): Future[ListReminderResponse] = {
-    repo.list(req).map(x => ListReminderResponse(x))
+  ): Future[ListReminderResponse] = for {
+    items <- repo.list(req)
+    count <- repo.count(req)
+  } yield {
+    ListReminderResponse(items, count)
   }
 
   override def createReminder(req: CreateReminderRequest): Future[Reminder] =

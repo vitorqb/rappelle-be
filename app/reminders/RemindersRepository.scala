@@ -16,6 +16,7 @@ trait RemindersRepositoryLike {
   def create(req: CreateReminderRequest): Future[Reminder]
   def read(id: Int): Future[Option[Reminder]]
   def list(req: ListReminderRequest): Future[Seq[Reminder]]
+  def count(req: ListReminderRequest): Future[Int]
 }
 
 class RemindersRepository @Inject() (
@@ -73,6 +74,8 @@ class RemindersRepository @Inject() (
       }
     }
   }
+
+  override def count(req: ListReminderRequest): Future[Int] = ???
 
 }
 

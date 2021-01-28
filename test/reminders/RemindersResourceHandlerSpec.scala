@@ -20,8 +20,9 @@ class RemindersResourceHandlerSpec
         c.repo.list(c.listReq) shouldReturn Future.successful(
           Seq(Fixtures.aReminder)
         )
+        c.repo.count(c.listReq) shouldReturn Future.successful(10)
         val result = c.handler.listReminders(c.listReq).futureValue
-        result must equal(ListReminderResponse(Seq(Fixtures.aReminder)))
+        result must equal(ListReminderResponse(Seq(Fixtures.aReminder), 10))
       }
     }
   }
