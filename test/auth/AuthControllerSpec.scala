@@ -19,7 +19,7 @@ class AuthControllerSpec
     with ArgumentMatchersSugar
     with Results {
 
-  implicit val sys = ActorSystem("test")
+  implicit val sys                  = ActorSystem("test")
   implicit val ec: ExecutionContext = ExecutionContext.global
 
   import AuthJsonSerializers._
@@ -32,7 +32,7 @@ class AuthControllerSpec
           returns
             Future.successful(c.token))
         val request = FakeRequest().withBody(Json.toJson(c.createTokenRequest))
-        val result = c.controller.postToken()(request)
+        val result  = c.controller.postToken()(request)
         status(result) mustBe 200
         contentAsJson(result) mustBe Json.toJson(c.token)
       }
@@ -42,7 +42,7 @@ class AuthControllerSpec
       WithTestContext() { c =>
         c.resourceHandler.createToken(any) throws new UserDoesNotExist
         val request = FakeRequest().withBody(Json.toJson(c.createTokenRequest))
-        val result = c.controller.postToken()(request)
+        val result  = c.controller.postToken()(request)
         status(result) mustBe 400
         contentAsJson(result) mustBe Json.obj("msg" -> "User does not exist")
       }
@@ -53,14 +53,14 @@ class AuthControllerSpec
     "return 400 on invalid token" in {
       WithTestContext((_: User) => None) { c =>
         val request = FakeRequest(routes.AuthController.ping())
-        val result = c.controller.ping()(request)
+        val result  = c.controller.ping()(request)
         Helpers.status(result) mustEqual UNAUTHORIZED
       }
     }
     "return 200 on valid token" in {
       WithTestContext() { c =>
         val request = FakeRequest(routes.AuthController.ping())
-        val result = c.controller.ping()(request)
+        val result  = c.controller.ping()(request)
         Helpers.status(result) mustEqual NO_CONTENT
       }
     }
@@ -83,8 +83,8 @@ class AuthControllerSpec
         Helpers.status(result) must equal(CREATED)
         Helpers.contentAsJson(result) must equal(
           Json.obj(
-            "id" -> 1,
-            "email" -> createUserReqInput.email,
+            "id"       -> 1,
+            "email"    -> createUserReqInput.email,
             "isActive" -> true
           )
         )
@@ -93,7 +93,7 @@ class AuthControllerSpec
     "returns error if user already exists" in {
       WithTestContext() { c =>
         val createUserReqInput = CreateUserRequestInput(c.user.email, "pass")
-        val body = Json.toJson(createUserReqInput)
+        val body               = Json.toJson(createUserReqInput)
         val request =
           FakeRequest(routes.AuthController.postUser()).withBody(body)
         c.resourceHandler.createUser(createUserReqInput)(
@@ -253,14 +253,14 @@ class AuthControllerSpec
 
     def apply(userFn: User => Option[User])(block: TestContext => Any): Any = {
       val emailConfirmationKey = "emailconfirmationkey"
-      val email = "a@b.c"
-      val user = User(1, email, true)
-      val password = "foo"
-      val createTokenRequest = CreateTokenRequestInput(email, password)
-      val token = Token("value", DateTime.parse("2020-01-01"), user.id)
-      val resourceHandler = mock[AuthResourceHandlerLike]
+      val email                = "a@b.c"
+      val user                 = User(1, email, true)
+      val password             = "foo"
+      val createTokenRequest   = CreateTokenRequestInput(email, password)
+      val token                = Token("value", DateTime.parse("2020-01-01"), user.id)
+      val resourceHandler      = mock[AuthResourceHandlerLike]
       val requestUserExtractor = new FakeRequestUserExtractor(userFn(user))
-      val tokenCookieManager = mock[TokenCookieManagerLike]
+      val tokenCookieManager   = mock[TokenCookieManagerLike]
       val controller = new AuthController(
         stubControllerComponents(),
         resourceHandler,

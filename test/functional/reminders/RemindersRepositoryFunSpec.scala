@@ -12,9 +12,9 @@ class RemindersRepositoryFunSpec extends FunctionalSpec {
     "" in {
       WithTestContext() { c =>
         val reminder = c.repo.create(c.createReq).futureValue
-        reminder must equal(Fixtures.aReminder.copy(id=1))
+        reminder must equal(Fixtures.aReminder.copy(id = 1))
         val listReq = ListReminderRequest(Fixtures.anUser)
-        val list = c.repo.list(listReq).futureValue
+        val list    = c.repo.list(listReq).futureValue
         list must equal(Seq(reminder))
       }
     }
@@ -22,11 +22,13 @@ class RemindersRepositoryFunSpec extends FunctionalSpec {
     "reads only specified number of items" in {
       WithTestContext() { c =>
         c.repo.create(c.createReq).futureValue
-        c.repo.create(c.createReq.copy(title="2")).futureValue
+        c.repo.create(c.createReq.copy(title = "2")).futureValue
         val reqPage1 = ListReminderRequest(Fixtures.anUser, itemsPerPage = 1, page = 1)
-        c.repo.list(reqPage1).futureValue must equal(Seq(Fixtures.aReminder.copy(id=2, title="2")))
+        c.repo.list(reqPage1).futureValue must equal(
+          Seq(Fixtures.aReminder.copy(id = 2, title = "2"))
+        )
         val reqPage2 = ListReminderRequest(Fixtures.anUser, itemsPerPage = 1, page = 2)
-        c.repo.list(reqPage2).futureValue must equal(Seq(Fixtures.aReminder.copy(id=1)))
+        c.repo.list(reqPage2).futureValue must equal(Seq(Fixtures.aReminder.copy(id = 1)))
       }
     }
 
@@ -48,7 +50,7 @@ class RemindersRepositoryFunSpec extends FunctionalSpec {
   }
 
   case class TestContext(
-    createReq: CreateReminderRequest,
+      createReq: CreateReminderRequest,
       repo: RemindersRepository
   )
 

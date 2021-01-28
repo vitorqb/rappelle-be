@@ -56,9 +56,9 @@ class RemindersRepository @Inject() (
         SQL(f"""INSERT INTO ${table} (id, userId, title, datetime)
                 VALUES ({id}, {userId}, {title}, {datetime})""")
           .on(
-            "id" -> id,
-            "userId" -> req.user.id,
-            "title" -> req.title,
+            "id"       -> id,
+            "userId"   -> req.user.id,
+            "title"    -> req.title,
             "datetime" -> req.datetime
           )
           .execute()
@@ -74,7 +74,7 @@ class RemindersRepository @Inject() (
         SQL(f"SELECT * FROM ${listQuery} ORDER BY id DESC LIMIT {limit} OFFSET {offset}")
           .on(
             "userId" -> req.user.id,
-            "limit" -> req.itemsPerPage,
+            "limit"  -> req.itemsPerPage,
             "offset" -> req.itemsPerPage * (req.page - 1)
           )
           .as(RemindersSqlParsers.reminderParser.*)

@@ -39,8 +39,8 @@ class UserRepository(
             VALUES ({id}, {email}, {passwordHash}, false)"""
       )
         .on(
-          "id" -> id,
-          "email" -> request.email,
+          "id"           -> id,
+          "email"        -> request.email,
           "passwordHash" -> hashSvc.hash(request.password)
         )
         .execute()
@@ -142,9 +142,8 @@ class FakeUserRepository extends UserRepositoryLike {
     read(request.userId).flatMap {
       case Some(user) => {
         val index = users.indexWhere { case (u, _) => u == user }
-        val newUser = user.copy(emailConfirmed =
-          request.emailConfirmed.getOrElse(user.emailConfirmed)
-        )
+        val newUser =
+          user.copy(emailConfirmed = request.emailConfirmed.getOrElse(user.emailConfirmed))
         users.updated(index, newUser)
         read(request.userId)
       }

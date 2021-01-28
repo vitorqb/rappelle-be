@@ -13,8 +13,8 @@ trait RemindersResourceHandlerLike {
 
 }
 
-class RemindersResourceHandler @Inject() (repo: RemindersRepositoryLike)(
-    implicit val ec: ExecutionContext
+class RemindersResourceHandler @Inject() (repo: RemindersRepositoryLike)(implicit
+    val ec: ExecutionContext
 ) extends RemindersResourceHandlerLike {
 
   override def listReminders(

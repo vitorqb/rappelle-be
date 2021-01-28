@@ -25,10 +25,10 @@ class MailgunEmailSvc(config: MailgunConfig, ws: WSClient)(implicit
       .withAuth("api", config.key, WSAuthScheme.BASIC)
       .post(
         Map(
-          "from" -> config.from,
-          "to" -> to,
+          "from"    -> config.from,
+          "to"      -> to,
           "subject" -> subject,
-          "text" -> content
+          "text"    -> content
         )
       )
       .map(r => {
@@ -51,7 +51,7 @@ class TestEmailSvc extends EmailSvcLike {
   import TestEmailSvc._
 
   private var sentEmails = Seq.empty[SentEmail]
-  private val logger = Logger(getClass())
+  private val logger     = Logger(getClass())
 
   def getSentEmails() = sentEmails
 

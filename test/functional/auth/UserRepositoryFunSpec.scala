@@ -21,7 +21,7 @@ class UserRepositoryFunSpec extends FunctionalSpec with ScalaFutures {
     WithTestContext() { c =>
       c.repo.create(c.request).futureValue
       val expectedId = c.idGenerator.lastVal()
-      val result = c.repo.read(expectedId).futureValue.get
+      val result     = c.repo.read(expectedId).futureValue.get
       result must equal(
         User(expectedId, c.request.email, emailConfirmed = false)
       )
@@ -34,7 +34,7 @@ class UserRepositoryFunSpec extends FunctionalSpec with ScalaFutures {
       val updateRequest =
         UpdateUserRequest(createdUser.id, emailConfirmed = Some(true))
       val updatedUser = c.repo.update(updateRequest).futureValue
-      val expected = createdUser.copy(emailConfirmed = true)
+      val expected    = createdUser.copy(emailConfirmed = true)
       updatedUser must equal(Some(expected))
       c.repo.read(updateRequest.userId).futureValue must equal(Some(expected))
     }
@@ -42,9 +42,9 @@ class UserRepositoryFunSpec extends FunctionalSpec with ScalaFutures {
 
   "create and update without any change" in {
     WithTestContext() { c =>
-      val createdUser = c.repo.create(c.request).futureValue
+      val createdUser   = c.repo.create(c.request).futureValue
       val updateRequest = UpdateUserRequest(createdUser.id)
-      val updatedUser = c.repo.update(updateRequest).futureValue
+      val updatedUser   = c.repo.update(updateRequest).futureValue
       updatedUser must equal(Some(createdUser))
       c.repo.read(updateRequest.userId).futureValue must equal(
         Some(createdUser)
@@ -85,7 +85,7 @@ class UserRepositoryFunSpec extends FunctionalSpec with ScalaFutures {
       WithTestApp() { app =>
         WithTestDb(app) { db =>
           val idGenerator = new FakeUniqueIdGenerator
-          val hashSvc = new FakePasswordHashSvc
+          val hashSvc     = new FakePasswordHashSvc
           block(
             TestContext(
               request,

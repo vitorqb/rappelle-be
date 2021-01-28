@@ -32,7 +32,7 @@ class EmailConfirmationRepository(
 
   import EmailConfirmationSqlParsers._
 
-  val table = "emailConfirmations"
+  val table          = "emailConfirmations"
   private val logger = Logger(getClass())
 
   def create(
@@ -46,10 +46,10 @@ class EmailConfirmationRepository(
               VALUES ({id}, {userId}, {key}, {sentAt}, {responseReceivedAt})"""
         )
           .on(
-            "id" -> idGenerator.gen(),
-            "userId" -> request.userId,
-            "key" -> request.key,
-            "sentAt" -> request.sentAt,
+            "id"                 -> idGenerator.gen(),
+            "userId"             -> request.userId,
+            "key"                -> request.key,
+            "sentAt"             -> request.sentAt,
             "responseReceivedAt" -> Option.empty[DateTime]
           )
           .execute()

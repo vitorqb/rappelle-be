@@ -23,8 +23,7 @@ object ReminderJsonSerializers {
         (JsPath \ "page").write[Int]
     )(x => (x.items, x.totalCount, x.page))
 
-  implicit val createReminderRequestInputReader
-      : Reads[CreateReminderRequestInput] =
+  implicit val createReminderRequestInputReader: Reads[CreateReminderRequestInput] =
     (
       (JsPath \ "title").read[String] and (JsPath \ "datetime").read[DateTime]
     )((x1, x2) => CreateReminderRequestInput(x1, x2))

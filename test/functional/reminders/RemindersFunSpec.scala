@@ -5,6 +5,7 @@ import functional.utils.AuthContext
 import org.scalatest.concurrent.ScalaFutures
 import play.api.libs.json.Json
 import functional.utils.FunctionalSpec
+import common.PaginationOptions
 
 class RemindersFunSpec extends FunctionalSpec with ScalaFutures {
 
@@ -14,12 +15,14 @@ class RemindersFunSpec extends FunctionalSpec with ScalaFutures {
         //First, get empty reminders
         val remindersBefore = c.authContext
           .requestWithToken(
-            routes.RemindersController.listReminders().toString()
+            routes.RemindersController.listReminders(c.paginationOpts).toString()
           )
           .get()
           .futureValue
         remindersBefore.status must equal(200)
-        remindersBefore.json must equal(Json.obj("items" -> Json.arr(), "totalCount" -> 0))
+        remindersBefore.json must equal(
+          Json.obj("items" -> Json.arr(), "totalCount" -> 0, "page" -> 1)
+        )
 
         //Then, create a reminder
         val reminder = c.authContext
@@ -37,23 +40,26 @@ class RemindersFunSpec extends FunctionalSpec with ScalaFutures {
         //Query for reminders
         val remindersAfter = c.authContext
           .requestWithToken(
-            routes.RemindersController.listReminders().toString()
+            routes.RemindersController.listReminders(c.paginationOpts).toString()
           )
           .get()
           .futureValue
         remindersAfter.status must equal(200)
         remindersAfter.json must equal(
           Json.obj(
-            "items" -> Json.arr(reminder.json),
-            "page" -> 1,
-            "totalCount" -> 1,
+            "items"      -> Json.arr(reminder.json),
+            "page"       -> 1,
+            "totalCount" -> 1
           )
         )
       }
     }
   }
 
-  case class TestContext(authContext: AuthContext)
+  case class TestContext(
+      authContext: AuthContext,
+      paginationOpts: PaginationOptions = PaginationOptions(1, 10)
+  )
 
   object WithTestContext {
     def apply()(block: TestContext => Any): Any = {

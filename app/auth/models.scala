@@ -54,7 +54,6 @@ case class UpdateEmailConfirmationRequest(
 /** Basic trait representing the possible outcomes for creating an email confirmation.
   */
 sealed trait EmailConfirmationResult {}
-case class SuccessEmailConfirmationResult(userId: Int)
-    extends EmailConfirmationResult
-case class ExpiredKeyEmailConfirmationResult() extends EmailConfirmationResult
-case class InvalidKeyEmailConfirmationResult() extends EmailConfirmationResult
+case class SuccessEmailConfirmationResult(userId: Int) extends EmailConfirmationResult
+case class ExpiredKeyEmailConfirmationResult()         extends EmailConfirmationResult
+case class InvalidKeyEmailConfirmationResult()         extends EmailConfirmationResult

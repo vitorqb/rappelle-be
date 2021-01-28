@@ -114,16 +114,16 @@ class EmailConfirmationSvcSpec
   object WithTestContext {
     def apply()(block: TestContext => Any): Any = {
       val repo = mock[EmailConfirmationRepositoryLike]
-      val key = "somekey"
+      val key  = "somekey"
       val oldEmailConfirmation =
         EmailConfirmation(1, 1, key, DateTime.parse("2020-01-01"), None)
       val newEmailConfirmation =
         oldEmailConfirmation.copy(
           responseReceivedAt = Some(DateTime.parse("2020-01-02"))
         )
-      val emailSvc = mock[EmailSvcLike]
-      val keyGenerator = mock[TokenGeneratorLike]
-      val clock = mock[ClockLike]
+      val emailSvc          = mock[EmailSvcLike]
+      val keyGenerator      = mock[TokenGeneratorLike]
+      val clock             = mock[ClockLike]
       val expirationSeconds = 3600
       block(
         TestContext(

@@ -84,7 +84,7 @@ class RequestUserExtractorSpec
     "not find an user for a missing header" in {
       WithTestContext() { c =>
         val request = FakeRequest()
-        val result = c.extractor.extractUser(request).futureValue
+        val result  = c.extractor.extractUser(request).futureValue
         result must equal(MissingHeaderExtractResult())
       }
     }
@@ -180,12 +180,12 @@ class RequestUserExtractorSpec
 
   object WithTestContext {
     def apply()(block: TestContext => Any): Any = {
-      val clock = mock[ClockLike]
-      val userRepo = mock[UserRepositoryLike]
+      val clock     = mock[ClockLike]
+      val userRepo  = mock[UserRepositoryLike]
       val tokenRepo = mock[AuthTokenRepositoryLike]
       val extractor = new RequestUserExtractor(userRepo, tokenRepo, clock)
-      val user = User(123, "a@b.c", true)
-      val token = Token("tokenvalue", DateTime.parse("2022-12-1"), user.id)
+      val user      = User(123, "a@b.c", true)
+      val token     = Token("tokenvalue", DateTime.parse("2022-12-1"), user.id)
       block(TestContext(user, token, userRepo, tokenRepo, extractor, clock))
     }
   }

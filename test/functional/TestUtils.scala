@@ -24,8 +24,8 @@ object WithTestApp {
     GuiceApplicationBuilder()
       .configure(conf)
       .configure(
-        "db.default.driver" -> funTestConfig.getString("funtest.db.driver"),
-        "db.default.url" -> funTestConfig.getString("funtest.db.url"),
+        "db.default.driver"   -> funTestConfig.getString("funtest.db.driver"),
+        "db.default.url"      -> funTestConfig.getString("funtest.db.url"),
         "db.default.username" -> funTestConfig.getString("funtest.db.username"),
         "db.default.password" -> funTestConfig.getString("funtest.db.password")
       )
@@ -68,7 +68,7 @@ object WithTestDb {
 
 object TestUtils {
   val testServerPort = 10301
-  val testServerUrl = s"http://localhost:${testServerPort}"
+  val testServerUrl  = s"http://localhost:${testServerPort}"
 }
 
 /** Provides a test context with an ulogged user
@@ -93,23 +93,23 @@ case class AuthContext(
 
 object WithAuthContext {
 
-  lazy val id = 123
-  lazy val email = "a@b.c"
-  lazy val password = "abc"
-  lazy val token = "TOKEN"
-  lazy val expiresAt = "2020-10-11T00:00:00.000Z"
-  lazy val now = "2020-01-11T00:00:00.000Z"
+  lazy val id              = 123
+  lazy val email           = "a@b.c"
+  lazy val password        = "abc"
+  lazy val token           = "TOKEN"
+  lazy val expiresAt       = "2020-10-11T00:00:00.000Z"
+  lazy val now             = "2020-01-11T00:00:00.000Z"
   lazy val confirmationKey = "confirmationkey"
   lazy val appConf = Map(
-    "auth.fakeUser.id" -> id,
-    "auth.fakeUser.email" -> email,
-    "auth.fakeUser.password" -> password,
-    "auth.fakeUser.emailConfirmed" -> true,
-    "auth.fakeToken.value" -> token,
-    "auth.fakeToken.expiresAt" -> expiresAt,
+    "auth.fakeUser.id"                              -> id,
+    "auth.fakeUser.email"                           -> email,
+    "auth.fakeUser.password"                        -> password,
+    "auth.fakeUser.emailConfirmed"                  -> true,
+    "auth.fakeToken.value"                          -> token,
+    "auth.fakeToken.expiresAt"                      -> expiresAt,
     "auth.fakeEmailConfirmationSvc.confirmationKey" -> confirmationKey,
-    "auth.fakeEmailConfirmationSvc.userId" -> id,
-    "services.clock.now" -> now
+    "auth.fakeEmailConfirmationSvc.userId"          -> id,
+    "services.clock.now"                            -> now
   )
 
   def apply()(block: AuthContext => Any): Any = apply(identity)(block)

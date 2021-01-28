@@ -20,7 +20,7 @@ class AuthFunSpec extends FunctionalSpec with ScalaFutures {
         postResult.status mustBe 200
         postResult.json must equal(
           Json.obj(
-            "value" -> c.token,
+            "value"     -> c.token,
             "expiresAt" -> c.expiresAt
           )
         )
@@ -67,7 +67,7 @@ class AuthFunSpec extends FunctionalSpec with ScalaFutures {
     "create an user, confirm email, get a token, and ping" in {
       WithAuthContext() { c =>
         val newUserEmail = "new@user.email"
-        val newUserPass = "newUserPass"
+        val newUserPass  = "newUserPass"
         val createResult = c
           .request(s"/api/auth/user")
           .withBody(
@@ -80,8 +80,8 @@ class AuthFunSpec extends FunctionalSpec with ScalaFutures {
         val expectedId = c.id + 1
         createResult.json must equal(
           Json.obj(
-            "id" -> expectedId,
-            "email" -> newUserEmail,
+            "id"       -> expectedId,
+            "email"    -> newUserEmail,
             "isActive" -> false
           )
         )

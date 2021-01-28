@@ -7,10 +7,7 @@ import testutils.Fixtures
 import org.scalatest.concurrent.ScalaFutures
 import scala.concurrent.ExecutionContext
 
-class RemindersResourceHandlerSpec
-    extends PlaySpec
-    with IdiomaticMockito
-    with ScalaFutures {
+class RemindersResourceHandlerSpec extends PlaySpec with IdiomaticMockito with ScalaFutures {
 
   implicit val ec = ExecutionContext.global
 
