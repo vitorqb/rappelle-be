@@ -19,7 +19,7 @@ class RemindersFunSpec extends FunctionalSpec with ScalaFutures {
           .get()
           .futureValue
         remindersBefore.status must equal(200)
-        remindersBefore.json must equal(Json.obj("items" -> Json.arr()))
+        remindersBefore.json must equal(Json.obj("items" -> Json.arr(), "totalCount" -> 0))
 
         //Then, create a reminder
         val reminder = c.authContext

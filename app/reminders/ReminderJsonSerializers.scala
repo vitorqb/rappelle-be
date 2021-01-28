@@ -18,8 +18,10 @@ object ReminderJsonSerializers {
 
   implicit val listReminderResponseWrites: Writes[ListReminderResponse] =
     (
-      (JsPath \ "items").write[Seq[Reminder]] and (JsPath \ "totalCount").write[Int]
-    )(x => (x.items, x.totalCount))
+      (JsPath \ "items").write[Seq[Reminder]] and
+        (JsPath \ "totalCount").write[Int] and
+        (JsPath \ "page").write[Int]
+    )(x => (x.items, x.totalCount, x.page))
 
   implicit val createReminderRequestInputReader
       : Reads[CreateReminderRequestInput] =

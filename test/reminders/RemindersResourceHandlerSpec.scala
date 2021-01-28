@@ -22,7 +22,7 @@ class RemindersResourceHandlerSpec
         )
         c.repo.count(c.listReq) shouldReturn Future.successful(10)
         val result = c.handler.listReminders(c.listReq).futureValue
-        result must equal(ListReminderResponse(Seq(Fixtures.aReminder), 10))
+        result must equal(ListReminderResponse(Seq(Fixtures.aReminder), 2, 10))
       }
     }
   }
@@ -52,7 +52,7 @@ class RemindersResourceHandlerSpec
       val repo = mock[RemindersRepositoryLike]
       block(
         TestContext(
-          listReq = ListReminderRequest(Fixtures.anUser),
+          listReq = ListReminderRequest(Fixtures.anUser, 1, 2),
           createReq = CreateReminderRequest(
             Fixtures.anUser,
             Fixtures.aReminder.title,

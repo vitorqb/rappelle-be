@@ -23,7 +23,7 @@ class RemindersResourceHandler @Inject() (repo: RemindersRepositoryLike)(
     items <- repo.list(req)
     count <- repo.count(req)
   } yield {
-    ListReminderResponse(items, count)
+    ListReminderResponse(items, req.page, count)
   }
 
   override def createReminder(req: CreateReminderRequest): Future[Reminder] =
