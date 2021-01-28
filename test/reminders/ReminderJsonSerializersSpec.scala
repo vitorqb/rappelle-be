@@ -4,6 +4,8 @@ import testutils.Fixtures
 import reminders.ReminderJsonSerializers._
 import play.api.libs.json.Json
 import org.scalatestplus.play.PlaySpec
+import org.joda.time.DateTime
+import org.joda.time.format.ISODateTimeFormat
 
 class ReminderJsonSerializersSpec extends PlaySpec {
 
@@ -23,11 +25,13 @@ class ReminderJsonSerializersSpec extends PlaySpec {
 
   "reminderWrites" should {
     "serialize a reminder" in {
+      val expDateTime =
+        ISODateTimeFormat.dateTime().print(Fixtures.aReminder.datetime)
       Json.toJson(Fixtures.aReminder) must equal(
         Json.obj(
           "id" -> Fixtures.aReminder.id,
           "title" -> Fixtures.aReminder.title,
-          "datetime" -> "2021-11-14T22:11:13.000+01:00"
+          "datetime" -> expDateTime
         )
       )
     }
