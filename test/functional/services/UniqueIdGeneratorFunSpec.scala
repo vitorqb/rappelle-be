@@ -1,10 +1,10 @@
 package services
 
-import org.scalatestplus.play.PlaySpec
 import functional.utils.WithTestApp
 import functional.utils.WithTestDb
+import functional.utils.FunctionalSpec
 
-class UniqueIdGeneratorFunSpec extends PlaySpec {
+class UniqueIdGeneratorFunSpec extends FunctionalSpec {
 
   "generate a sequence of unique ids" in {
     WithTestApp() { app =>

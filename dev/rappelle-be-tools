@@ -9,6 +9,7 @@ import json
 # Globals
 # (some day should be converted to configurable options)
 PROJECT_NAME = "rappelle-be"
+TEST_USER_TOKEN = "faketoken"
 
 
 # Helpers
@@ -91,10 +92,18 @@ def run(r, args):
 
 def curl(r, args):
     url = f"127.0.0.1:9000{args.command[-1]}"
+    curl_headers = [
+        "-H",
+        "Content-Type: application/json"
+    ]
+    if args.auth:
+        curl_headers += [
+            "-H",
+            f"Authorization: Bearer {TEST_USER_TOKEN}"
+        ]
     cmd = [
         "curl",
-        "-H",
-        "Content-Type: application/json",
+        *curl_headers,
         *args.command[:-1],
         url
     ]
@@ -181,6 +190,7 @@ parser_build.add_argument('-t', '--tag', help="tag for docker file")
 
 parser_curl = subparsers.add_parser('curl')
 parser_curl.set_defaults(func=curl)
+parser_curl.add_argument('-a', '--auth', help="Sends an authorization header with a fake token", action="store_true")
 parser_curl.add_argument('command', nargs='+', help="Runs curl with custom headers. Assumes the relative url is the last param.")
 
 

@@ -1,9 +1,9 @@
 package services
 
-import org.scalatestplus.play.PlaySpec
 import functional.utils.WithTestApp
+import functional.utils.FunctionalSpec
 
-class EncryptionSvcFunSpec extends PlaySpec {
+class EncryptionSvcFunSpec extends FunctionalSpec {
 
   "encrypt and descrypt" should {
 

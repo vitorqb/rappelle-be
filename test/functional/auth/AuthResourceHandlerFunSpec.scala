@@ -1,22 +1,15 @@
 package auth
 
-import org.scalatestplus.play.PlaySpec
 import org.joda.time.DateTime
-import scala.concurrent.ExecutionContext
 import functional.utils.WithTestApp
 import services.TestEmailSvc
 import functional.utils.WithTestDb
 import org.scalatest.concurrent.ScalaFutures
 import services.EmailSvcLike
 import play.api.test.FakeRequest
-import org.scalatest.time.Seconds
-import org.scalatest.time.Millis
-import org.scalatest.time.Span
+import functional.utils.FunctionalSpec
 
-class AuthResourceHandlerFunSpec extends PlaySpec with ScalaFutures {
-
-  implicit val defaultPatience =
-    PatienceConfig(timeout = Span(2, Seconds), interval = Span(5, Millis))
+class AuthResourceHandlerFunSpec extends FunctionalSpec with ScalaFutures {
 
   "createUser" should {
 
@@ -58,7 +51,6 @@ class AuthResourceHandlerFunSpec extends PlaySpec with ScalaFutures {
 
   object WithTestContext {
 
-    implicit val ec: ExecutionContext = ExecutionContext.global
     val fakeToken = "fakeToken"
     val expirationDate = "2021-01-12T20:23:39"
     val frontendUrl = "http://127.0.0.1:9000"
