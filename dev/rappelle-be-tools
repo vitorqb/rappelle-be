@@ -56,7 +56,7 @@ def bootstrap(args):
 
 # Commands
 def scalafmt(r, args):
-    cmd = ['coursier', 'launch', 'scalafmt', '--']
+    cmd = ['coursier', 'launch', 'org.scalameta:scalafmt-cli_2.13:3.0.0-RC2', '--']
     if args.check:
         cmd += ['--check']
     cmd += ["--debug", './app', './test']
@@ -150,6 +150,10 @@ def build(r, args):
     ])
 
 
+def clean(r, args):
+    r.run_sbt(["clean"])
+
+
 # Arg parsing
 parser = argparse.ArgumentParser(description="Development tools for rappelle-be")
 parser.add_argument(
@@ -193,6 +197,8 @@ parser_curl.set_defaults(func=curl)
 parser_curl.add_argument('-a', '--auth', help="Sends an authorization header with a fake token", action="store_true")
 parser_curl.add_argument('command', nargs='+', help="Runs curl with custom headers. Assumes the relative url is the last param.")
 
+parser_clean = subparsers.add_parser('clean')
+parser_clean.set_defaults(func=clean)
 
 # Script
 if __name__ == "__main__":

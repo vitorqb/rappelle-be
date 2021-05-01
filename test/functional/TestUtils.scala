@@ -43,11 +43,7 @@ object WithTestApp {
 
 }
 
-/** Provides a database for tests.
-  * Can be used like this:
-  *   WithTestDb(app) { db =>
-  *     ...
-  *   }
+/** Provides a database for tests. Can be used like this: WithTestDb(app) { db => ... }
   */
 object WithTestDb {
 
