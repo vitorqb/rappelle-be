@@ -70,8 +70,8 @@ class AuthTokenRepository(
 
 }
 
-/** A dummy (test) implementation for the repository of authentication tokens.
-  * Simply returns always the same token and validates always the same user.
+/** A dummy (test) implementation for the repository of authentication tokens. Simply returns always
+  * the same token and validates always the same user.
   */
 class DummyAuthTokenRepository(user: User, password: String, token: Token)
     extends AuthTokenRepositoryLike {
