@@ -35,6 +35,7 @@ class RemindersController @Inject() (
     WithAuthErrorHandling {
       requestUserExtractor.withUser(request) { user =>
         parseRequestJson[CreateReminderRequestInput] { input =>
+          logger.info(s"Handling postReminder for user ${user.email}")
           resourceHandler.createReminder(
             CreateReminderRequest(
               user = user,
