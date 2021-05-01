@@ -44,9 +44,9 @@ class AuthTokenRepository(
               VALUES ({id}, {userId}, {expiresAt}, {tokenValue})"""
         )
           .on(
-            "id" -> uniqueIdGenerator.gen(),
-            "userId" -> request.user.id,
-            "expiresAt" -> request.expiresAt,
+            "id"         -> uniqueIdGenerator.gen(),
+            "userId"     -> request.user.id,
+            "expiresAt"  -> request.expiresAt,
             "tokenValue" -> request.value
           )
           .execute()

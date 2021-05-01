@@ -73,8 +73,8 @@ class TokenCookieManagerSpec
   "cookie" should {
     "generate a cookie" in {
       WithTestContext() { c =>
-        val token = Token("token", DateTime.parse("2020-01-01"), 1)
-        val cookie = c.manager.cookie(token)
+        val token       = Token("token", DateTime.parse("2020-01-01"), 1)
+        val cookie      = c.manager.cookie(token)
         val cookieValue = Base64.getDecoder().decode(cookie.value)
         c.encryptionSvc.decrypt(cookieValue) must equal("token")
       }
@@ -91,8 +91,8 @@ class TokenCookieManagerSpec
 
   object WithTestContext {
     def apply()(block: TestContext => Any): Any = {
-      val tokenRepo = mock[AuthTokenRepositoryLike]
-      val clock = new FakeClock(DateTime.parse("2020-01-01T00:00:00"))
+      val tokenRepo     = mock[AuthTokenRepositoryLike]
+      val clock         = new FakeClock(DateTime.parse("2020-01-01T00:00:00"))
       val encryptionSvc = new FakeEncriptionSvc
       val encryptedToken =
         Base64.getEncoder().encodeToString(encryptionSvc.encrypt("token"))

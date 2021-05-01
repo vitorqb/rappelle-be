@@ -11,8 +11,8 @@ import play.api.test.Helpers.defaultAwaitTimeout
 import auth.FakeRequestUserExtractor
 import scala.concurrent.ExecutionContext
 import ReminderJsonSerializers._
-import org.joda.time.DateTime
 import play.api.libs.json.JodaWrites._
+import common.PaginationOptions
 
 class RemindersControllerSpec extends PlaySpec with IdiomaticMockito {
 
@@ -22,14 +22,24 @@ class RemindersControllerSpec extends PlaySpec with IdiomaticMockito {
 
     "query the handler for a list of reminders" in {
       WithTestContext() { c =>
-        val listRemindersResp = ListReminderResponse(Seq(Fixtures.aReminder))
         c.handler.listReminders(c.listRequest) shouldReturn Future.successful(
-          listRemindersResp
+          c.listRemindersResp
         )
-        val response = c.controller.listReminders(FakeRequest())
+        val response = c.controller.listReminders(c.paginationOpts)(FakeRequest())
         Helpers.status(response) must equal(200)
         Helpers.contentAsJson(response) must equal(
-          Json.toJson(listRemindersResp)
+          Json.toJson(c.listRemindersResp)
+        )
+      }
+    }
+
+    "passes pagination options to handler" in {
+      WithTestContext() { c =>
+        val listReq        = c.listRequest.copy(itemsPerPage = 100, page = 9)
+        val paginationOpts = c.paginationOpts.copy(itemsPerPage = 100, page = 9)
+        c.handler.listReminders(listReq) shouldReturn Future.successful(c.listRemindersResp)
+        Helpers.contentAsJson(c.controller.listReminders(paginationOpts)(FakeRequest())) must equal(
+          Json.toJson(c.listRemindersResp)
         )
       }
     }
@@ -46,7 +56,7 @@ class RemindersControllerSpec extends PlaySpec with IdiomaticMockito {
           )
         val request = FakeRequest().withBody(
           Json.obj(
-            "title" -> Fixtures.aReminder.title,
+            "title"    -> Fixtures.aReminder.title,
             "datetime" -> Fixtures.aReminder.datetime
           )
         )
@@ -63,8 +73,14 @@ class RemindersControllerSpec extends PlaySpec with IdiomaticMockito {
   case class TestContext(
       handler: RemindersResourceHandlerLike,
       controller: RemindersController,
-      listRequest: ListReminderRequest,
-      createRequest: CreateReminderRequest
+      paginationOpts: PaginationOptions = PaginationOptions(1, 2),
+      listRequest: ListReminderRequest = ListReminderRequest(Fixtures.anUser, 2, 1),
+      listRemindersResp: ListReminderResponse = ListReminderResponse(Seq(Fixtures.aReminder)),
+      createRequest: CreateReminderRequest = CreateReminderRequest(
+        Fixtures.anUser,
+        Fixtures.aReminder.title,
+        Fixtures.aReminder.datetime
+      )
   )
   object WithTestContext {
     def apply()(block: TestContext => Any): Any = {
@@ -76,12 +92,6 @@ class RemindersControllerSpec extends PlaySpec with IdiomaticMockito {
             Helpers.stubControllerComponents(),
             handler,
             new FakeRequestUserExtractor(Some(Fixtures.anUser))
-          ),
-          listRequest = ListReminderRequest(Fixtures.anUser),
-          createRequest = CreateReminderRequest(
-            Fixtures.anUser,
-            Fixtures.aReminder.title,
-            Fixtures.aReminder.datetime
           )
         )
       )

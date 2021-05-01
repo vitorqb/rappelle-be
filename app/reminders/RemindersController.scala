@@ -9,6 +9,8 @@ import common.RappelleBaseController
 import auth.WithAuthErrorHandling
 import play.api.libs.json.Json
 import ReminderJsonSerializers._
+import common.PaginationOptions
+import common.PaginationOptions._
 
 @com.google.inject.Singleton
 class RemindersController @Inject() (
@@ -20,10 +22,10 @@ class RemindersController @Inject() (
 
   val logger = Logger(getClass())
 
-  def listReminders = Action.async { implicit request =>
+  def listReminders(pagOpts: PaginationOptions) = Action.async { implicit request =>
     WithAuthErrorHandling {
       requestUserExtractor.withUser(request) { user =>
-        val req = ListReminderRequest(user)
+        val req = ListReminderRequest(user, pagOpts.itemsPerPage, pagOpts.page)
         resourceHandler.listReminders(req).map(x => Ok(Json.toJson(x)))
       }
     }
@@ -33,6 +35,7 @@ class RemindersController @Inject() (
     WithAuthErrorHandling {
       requestUserExtractor.withUser(request) { user =>
         parseRequestJson[CreateReminderRequestInput] { input =>
+          logger.info(s"Handling postReminder for user ${user.email}")
           resourceHandler.createReminder(
             CreateReminderRequest(
               user = user,

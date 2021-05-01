@@ -25,9 +25,9 @@ trait TokenCookieManagerLike {
 object TokenCookieManagerLike {
   val COOKIE_NAME = "RappelleAuth"
   sealed trait Result
-  case class MissingCookie() extends Result
-  case class TokenNotFound() extends Result
-  case class InvalidToken() extends Result
+  case class MissingCookie()     extends Result
+  case class TokenNotFound()     extends Result
+  case class InvalidToken()      extends Result
   case class Found(token: Token) extends Result
 }
 

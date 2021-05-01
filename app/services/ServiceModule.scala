@@ -89,7 +89,7 @@ class ServiceModule extends AbstractModule {
       case "EncryptionSvc" => {
         TinkConfig.register();
         val fileName = config.get[String]("services.encryption.keysetFile")
-        val file = env.resourceAsStream(fileName).get
+        val file     = env.resourceAsStream(fileName).get
         val keysetHandler =
           CleartextKeysetHandle.read(JsonKeysetReader.withInputStream(file))
         logger.info("Providing EncryptionSvc")
@@ -110,9 +110,9 @@ object ServiceConfigLoaders {
     new ConfigLoader[MailgunConfig] {
 
       override def load(config: Config, path: String): MailgunConfig = {
-        val url = config.getString(f"${path}.url")
+        val url  = config.getString(f"${path}.url")
         val from = config.getString(f"${path}.from")
-        val key = config.getString(f"${path}.key")
+        val key  = config.getString(f"${path}.key")
         MailgunConfig(url, from, key)
       }
     }

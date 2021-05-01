@@ -48,6 +48,6 @@ object FakeEncriptionSvc {
 
   TinkConfig.register();
   val keysetTemplate = AesGcmKeyManager.aes128GcmTemplate();
-  val keysetHandle = KeysetHandle.generateNew(keysetTemplate);
+  val keysetHandle   = KeysetHandle.generateNew(keysetTemplate);
 
 }

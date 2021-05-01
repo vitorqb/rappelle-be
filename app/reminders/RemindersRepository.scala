@@ -10,12 +10,14 @@ import play.api.Logger
 import anorm.SQL
 import anorm.JodaParameterMetaData._
 import org.joda.time.DateTime
+import anorm.SqlParser
 
 @ImplementedBy(classOf[RemindersRepository])
 trait RemindersRepositoryLike {
   def create(req: CreateReminderRequest): Future[Reminder]
   def read(id: Int): Future[Option[Reminder]]
   def list(req: ListReminderRequest): Future[Seq[Reminder]]
+  def count(req: ListReminderRequest): Future[Int]
 }
 
 class RemindersRepository @Inject() (
@@ -28,6 +30,8 @@ class RemindersRepository @Inject() (
   private val table = "reminders"
 
   private val logger = Logger(getClass())
+
+  private val listQuery = f"""${table} WHERE userId = {userId}"""
 
   override def read(id: Int): Future[Option[Reminder]] = {
     logger.info(f"Recovering rmeinder with id $id")
@@ -52,9 +56,9 @@ class RemindersRepository @Inject() (
         SQL(f"""INSERT INTO ${table} (id, userId, title, datetime)
                 VALUES ({id}, {userId}, {title}, {datetime})""")
           .on(
-            "id" -> id,
-            "userId" -> req.user.id,
-            "title" -> req.title,
+            "id"       -> id,
+            "userId"   -> req.user.id,
+            "title"    -> req.title,
             "datetime" -> req.datetime
           )
           .execute()
@@ -67,9 +71,25 @@ class RemindersRepository @Inject() (
     logger.info(f"Recovering reminder for req $req")
     Future {
       db.withConnection { implicit c =>
-        SQL(f"""SELECT * FROM ${table} WHERE userId = {userId}""")
-          .on("userId" -> req.user.id)
+        SQL(f"SELECT * FROM ${listQuery} ORDER BY id DESC LIMIT {limit} OFFSET {offset}")
+          .on(
+            "userId" -> req.user.id,
+            "limit"  -> req.itemsPerPage,
+            "offset" -> req.itemsPerPage * (req.page - 1)
+          )
           .as(RemindersSqlParsers.reminderParser.*)
+      }
+    }
+  }
+
+  override def count(req: ListReminderRequest): Future[Int] = {
+    Future {
+      db.withConnection { implicit c =>
+        SQL(f"SELECT COUNT(*) FROM $listQuery")
+          .on("userId" -> req.user.id)
+          .as(SqlParser.int("count").*)
+          .headOption
+          .getOrElse(0)
       }
     }
   }

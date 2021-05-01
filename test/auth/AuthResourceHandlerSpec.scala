@@ -149,10 +149,10 @@ class AuthResourceHandlerSpec
 
   object WithTestContext {
     def apply()(block: TestContext => Any): Any = {
-      val userRepo = mock[UserRepositoryLike]
-      val tokenRepo = mock[AuthTokenRepositoryLike]
-      val expiresAt = DateTime.parse("2021-12-25")
-      val tokenGenerator = new FakeTokenGenerator("sometoken", expiresAt)
+      val userRepo             = mock[UserRepositoryLike]
+      val tokenRepo            = mock[AuthTokenRepositoryLike]
+      val expiresAt            = DateTime.parse("2021-12-25")
+      val tokenGenerator       = new FakeTokenGenerator("sometoken", expiresAt)
       val emailConfirmationSvc = mock[EmailConfirmationSvcLike]
       block(
         TestContext(
@@ -191,8 +191,7 @@ class AuthResourceHandlerSpec
           CreateEmailConfirmationTestContext(
             oldUser = oldUser,
             newUser = oldUser.copy(emailConfirmed = true),
-            updateUserRequest =
-              UpdateUserRequest(oldUser.id, emailConfirmed = Some(true)),
+            updateUserRequest = UpdateUserRequest(oldUser.id, emailConfirmed = Some(true)),
             request = EmailConfirmationRequest("somekey"),
             emailConfirmationSvc = c.emailConfirmationSvc,
             userRepo = c.userRepo,

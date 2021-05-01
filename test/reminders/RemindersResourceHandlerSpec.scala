@@ -7,10 +7,7 @@ import testutils.Fixtures
 import org.scalatest.concurrent.ScalaFutures
 import scala.concurrent.ExecutionContext
 
-class RemindersResourceHandlerSpec
-    extends PlaySpec
-    with IdiomaticMockito
-    with ScalaFutures {
+class RemindersResourceHandlerSpec extends PlaySpec with IdiomaticMockito with ScalaFutures {
 
   implicit val ec = ExecutionContext.global
 
@@ -20,8 +17,9 @@ class RemindersResourceHandlerSpec
         c.repo.list(c.listReq) shouldReturn Future.successful(
           Seq(Fixtures.aReminder)
         )
+        c.repo.count(c.listReq) shouldReturn Future.successful(10)
         val result = c.handler.listReminders(c.listReq).futureValue
-        result must equal(ListReminderResponse(Seq(Fixtures.aReminder)))
+        result must equal(ListReminderResponse(Seq(Fixtures.aReminder), 2, 10))
       }
     }
   }
@@ -51,7 +49,7 @@ class RemindersResourceHandlerSpec
       val repo = mock[RemindersRepositoryLike]
       block(
         TestContext(
-          listReq = ListReminderRequest(Fixtures.anUser),
+          listReq = ListReminderRequest(Fixtures.anUser, 1, 2),
           createReq = CreateReminderRequest(
             Fixtures.anUser,
             Fixtures.aReminder.title,

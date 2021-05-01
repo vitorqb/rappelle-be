@@ -49,14 +49,14 @@ class AuthModule extends AbstractModule {
         new AuthTokenRepository(db, idGenerator)
       }
       case Some("DummyAuthTokenRepository") => {
-        val id = config.get[Int]("auth.fakeUser.id")
-        val email = config.get[String]("auth.fakeUser.email")
-        val password = config.get[String]("auth.fakeUser.password")
+        val id             = config.get[Int]("auth.fakeUser.id")
+        val email          = config.get[String]("auth.fakeUser.email")
+        val password       = config.get[String]("auth.fakeUser.password")
         val emailConfirmed = config.get[Boolean]("auth.fakeUser.emailConfirmed")
-        val accessToken = config.get[String]("auth.fakeToken.value")
-        val expiresAt = config.get[String]("auth.fakeToken.expiresAt")
-        val user = User(id, email, emailConfirmed)
-        val token = Token(accessToken, DateTime.parse(expiresAt), id)
+        val accessToken    = config.get[String]("auth.fakeToken.value")
+        val expiresAt      = config.get[String]("auth.fakeToken.expiresAt")
+        val user           = User(id, email, emailConfirmed)
+        val token          = Token(accessToken, DateTime.parse(expiresAt), id)
         logger.info(
           f"Providing with DummyAuthTokenRepository($user, $password, $token)"
         )
@@ -84,12 +84,12 @@ class AuthModule extends AbstractModule {
         new UserRepository(db, idGenerator, hashSvc)(ec)
       }
       case Some("FakeUserRepository") => {
-        val id = config.get[Int]("auth.fakeUser.id")
-        val email = config.get[String]("auth.fakeUser.email")
-        val password = config.get[String]("auth.fakeUser.password")
+        val id             = config.get[Int]("auth.fakeUser.id")
+        val email          = config.get[String]("auth.fakeUser.email")
+        val password       = config.get[String]("auth.fakeUser.password")
         val emailConfirmed = config.get[Boolean]("auth.fakeUser.emailConfirmed")
-        val request = CreateUserRequest(email, password)
-        val repo = new FakeUserRepository
+        val request        = CreateUserRequest(email, password)
+        val repo           = new FakeUserRepository
         repo.create(request, id, emailConfirmed)
         logger.info(
           f"Providing FakeUserRepository.create($request, $id, $emailConfirmed)"

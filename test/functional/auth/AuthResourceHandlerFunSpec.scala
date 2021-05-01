@@ -17,8 +17,8 @@ class AuthResourceHandlerFunSpec extends FunctionalSpec with ScalaFutures {
       WithTestContext { c =>
         assert(c.testEmailSvc.getSentEmails() == Seq.empty)
         val createUserReq = CreateUserRequestInput("foo@bar.baz", "pass")
-        val httpReq = FakeRequest()
-        val result = c.handler.createUser(createUserReq)(httpReq).futureValue
+        val httpReq       = FakeRequest()
+        val result        = c.handler.createUser(createUserReq)(httpReq).futureValue
         result.email must equal("foo@bar.baz")
         println(c.testEmailSvc)
         c.testEmailSvc.getSentEmails() must equal(
@@ -51,17 +51,17 @@ class AuthResourceHandlerFunSpec extends FunctionalSpec with ScalaFutures {
 
   object WithTestContext {
 
-    val fakeToken = "fakeToken"
+    val fakeToken      = "fakeToken"
     val expirationDate = "2021-01-12T20:23:39"
-    val frontendUrl = "http://127.0.0.1:9000"
+    val frontendUrl    = "http://127.0.0.1:9000"
 
     val conf = Map(
-      "auth.fakeToken.value" -> fakeToken,
-      "auth.fakeToken.expiresAt" -> expirationDate,
-      "auth.emailConfirmationSvc.type" -> "EmailConfirmationSvc",
+      "auth.fakeToken.value"                  -> fakeToken,
+      "auth.fakeToken.expiresAt"              -> expirationDate,
+      "auth.emailConfirmationSvc.type"        -> "EmailConfirmationSvc",
       "auth.emailConfirmationRepository.type" -> "EmailConfirmationRepository",
-      "services.email.type" -> "TestEmailSvc",
-      "frontendUrl" -> frontendUrl
+      "services.email.type"                   -> "TestEmailSvc",
+      "frontendUrl"                           -> frontendUrl
     )
 
     def apply(block: TestContext => Any): Any = {

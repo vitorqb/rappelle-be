@@ -75,7 +75,7 @@ class RequestUserExtractor(
     val ec: ExecutionContext
 ) extends RequestUserExtractorLike {
 
-  protected val logger = Logger(getClass())
+  protected val logger     = Logger(getClass())
   protected val TokenRegex = "^Bearer (.*)$".r
 
   override def extractUser[A](

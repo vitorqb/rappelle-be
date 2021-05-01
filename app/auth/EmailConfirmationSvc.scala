@@ -38,9 +38,9 @@ class EmailConfirmationSvc(
     val ec: ExecutionContext
 ) extends EmailConfirmationSvcLike {
 
-  val logger = Logger(getClass())
-  val keySize = 10
-  val emailSubject = "Confirm your Rappelle accoount!"
+  val logger                                                           = Logger(getClass())
+  val keySize                                                          = 10
+  val emailSubject                                                     = "Confirm your Rappelle accoount!"
   def emailBody(key: String, callbackGenerator: CallbackGeneratorLike) = f"""
    |Please click on the following link to confirm your account:
    |
@@ -54,8 +54,8 @@ class EmailConfirmationSvc(
       callbackGenerator: CallbackGeneratorLike
   ): Future[Unit] = {
     logger.info(f"Sending for user $user")
-    val key = keyGenerator.genValue(keySize)
-    val now = clock.now()
+    val key           = keyGenerator.genValue(keySize)
+    val now           = clock.now()
     val createRequest = CreateEmailConfirmationRequest(user.id, key, now)
     repo.create(createRequest).flatMap { _ =>
       emailSvc
@@ -74,8 +74,7 @@ class EmailConfirmationSvc(
       case Some(confirmation) if confirmation.responseReceivedAt.isDefined =>
         Future.successful(InvalidKeyEmailConfirmationResult())
 
-      case Some(confirmation)
-          if confirmation.isValid(now, expirationSeconds) => {
+      case Some(confirmation) if confirmation.isValid(now, expirationSeconds) => {
         val updateRequest = UpdateEmailConfirmationRequest(
           confirmation.id,
           responseReceivedAt = Some(Some(now))
@@ -86,8 +85,7 @@ class EmailConfirmationSvc(
         }
       }
 
-      case Some(confirmation)
-          if !confirmation.isValid(now, expirationSeconds) =>
+      case Some(confirmation) if !confirmation.isValid(now, expirationSeconds) =>
         Future.successful(ExpiredKeyEmailConfirmationResult())
 
       case None =>
