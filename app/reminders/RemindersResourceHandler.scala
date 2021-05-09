@@ -10,6 +10,7 @@ trait RemindersResourceHandlerLike {
 
   def listReminders(req: ListReminderRequest): Future[ListReminderResponse]
   def createReminder(req: CreateReminderRequest): Future[Reminder]
+  def deleteReminder(req: DeleteReminderRequest): Future[Unit]
 
 }
 
@@ -28,5 +29,11 @@ class RemindersResourceHandler @Inject() (repo: RemindersRepositoryLike)(implici
 
   override def createReminder(req: CreateReminderRequest): Future[Reminder] =
     repo.create(req)
+
+  override def deleteReminder(req: DeleteReminderRequest): Future[Unit] =
+    repo.read(req.id, req.user).flatMap {
+      case Some(x) => repo.delete(req)
+      case None    => throw new ReminderNotFound
+    }
 
 }

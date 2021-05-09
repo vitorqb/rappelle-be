@@ -10,7 +10,6 @@ import auth.WithAuthErrorHandling
 import play.api.libs.json.Json
 import ReminderJsonSerializers._
 import common.PaginationOptions
-import common.PaginationOptions._
 
 @com.google.inject.Singleton
 class RemindersController @Inject() (
@@ -46,6 +45,22 @@ class RemindersController @Inject() (
             Ok(Json.toJson(reminder))
           }
         }
+      }
+    }
+  }
+
+  def deleteReminder(id: Int) = Action.async { implicit request =>
+    WithAuthErrorHandling {
+      requestUserExtractor.withUser(request) { user =>
+        val req = DeleteReminderRequest(id, user)
+        resourceHandler
+          .deleteReminder(req)
+          .map { _ =>
+            Ok
+          }
+          .recover { case _: ReminderNotFound =>
+            NotFound
+          }
       }
     }
   }

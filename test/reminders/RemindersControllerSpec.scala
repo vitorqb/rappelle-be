@@ -70,6 +70,31 @@ class RemindersControllerSpec extends PlaySpec with IdiomaticMockito {
 
   }
 
+  "deletereminder" should {
+
+    "returns 200 when reminder delete" in {
+      WithTestContext() { c =>
+        val deleteReq = DeleteReminderRequest(id = 1, user = Fixtures.anUser)
+        c.handler.deleteReminder(deleteReq) shouldReturn Future.successful(())
+
+        val result = c.controller.deleteReminder(1)(FakeRequest())
+
+        Helpers.status(result) must equal(200)
+      }
+    }
+
+    "returns 404 when reminder not found for user" in {
+      WithTestContext() { c =>
+        val deleteReq = DeleteReminderRequest(id = 1, user = Fixtures.anUser)
+        c.handler.deleteReminder(deleteReq) shouldReturn Future.failed(new ReminderNotFound())
+
+        val result = c.controller.deleteReminder(1)(FakeRequest())
+
+        Helpers.status(result) must equal(404)
+      }
+    }
+  }
+
   case class TestContext(
       handler: RemindersResourceHandlerLike,
       controller: RemindersController,
