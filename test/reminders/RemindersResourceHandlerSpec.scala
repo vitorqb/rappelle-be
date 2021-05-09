@@ -6,6 +6,7 @@ import scala.concurrent.Future
 import testutils.Fixtures
 import org.scalatest.concurrent.ScalaFutures
 import scala.concurrent.ExecutionContext
+import auth.User
 
 class RemindersResourceHandlerSpec extends PlaySpec with IdiomaticMockito with ScalaFutures {
 
@@ -32,6 +33,27 @@ class RemindersResourceHandlerSpec extends PlaySpec with IdiomaticMockito with S
         )
         val result = c.handler.createReminder(c.createReq).futureValue
         result must equal(Fixtures.aReminder)
+      }
+    }
+  }
+
+  "deleteReminder" should {
+    "send a deletion request to repository if exists" in {
+      WithTestContext() { c =>
+        val deleteReq = DeleteReminderRequest(1, Fixtures.anUser)
+        c.repo.read(1, Fixtures.anUser) shouldReturn Future.successful(Some(Fixtures.aReminder))
+        c.repo.delete(deleteReq) shouldReturn Future.successful(())
+        val result = c.handler.deleteReminder(deleteReq).futureValue
+        result must equal(())
+      }
+    }
+
+    "throw Not Found if not exists" in {
+      WithTestContext() { c =>
+        val deleteReq = DeleteReminderRequest(1, Fixtures.anUser)
+        c.repo.read(1, Fixtures.anUser) shouldReturn Future.successful(None)
+        val result = c.handler.deleteReminder(deleteReq).failed.futureValue
+        result must equal(new ReminderNotFound)
       }
     }
   }

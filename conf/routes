@@ -12,3 +12,4 @@ POST    /api/auth/emailConfirmation         auth.AuthController.postEmailConfirm
 
 GET     /api/reminder                       reminders.RemindersController.listReminders(pagOpts: common.PaginationOptions)
 POST    /api/reminder                       reminders.RemindersController.postReminder()
+DELETE  /api/reminder/:id                   reminders.RemindersController.deleteReminder(id: Int)

@@ -11,13 +11,15 @@ import anorm.SQL
 import anorm.JodaParameterMetaData._
 import org.joda.time.DateTime
 import anorm.SqlParser
+import auth.User
 
 @ImplementedBy(classOf[RemindersRepository])
 trait RemindersRepositoryLike {
   def create(req: CreateReminderRequest): Future[Reminder]
-  def read(id: Int): Future[Option[Reminder]]
+  def read(id: Int, user: User): Future[Option[Reminder]]
   def list(req: ListReminderRequest): Future[Seq[Reminder]]
   def count(req: ListReminderRequest): Future[Int]
+  def delete(req: DeleteReminderRequest): Future[Unit]
 }
 
 class RemindersRepository @Inject() (
@@ -33,12 +35,12 @@ class RemindersRepository @Inject() (
 
   private val listQuery = f"""${table} WHERE userId = {userId}"""
 
-  override def read(id: Int): Future[Option[Reminder]] = {
-    logger.info(f"Recovering rmeinder with id $id")
+  override def read(id: Int, user: User): Future[Option[Reminder]] = {
+    logger.info(f"Recovering rmeinder with id $id for user ${user.id}")
     Future {
       db.withConnection { implicit c =>
-        SQL(f"""SELECT * FROM ${table} WHERE id = {id}""")
-          .on("id" -> id)
+        SQL(f"""SELECT * FROM ${table} WHERE id = {id} AND userId = {userId}""")
+          .on("id" -> id, "userId" -> user.id)
           .as(RemindersSqlParsers.reminderParser.*)
           .headOption
       }
@@ -62,7 +64,7 @@ class RemindersRepository @Inject() (
             "datetime" -> req.datetime
           )
           .execute()
-        read(id).map(_.get)
+        read(id, req.user).map(_.get)
       }
     }.flatten
   }
@@ -93,6 +95,15 @@ class RemindersRepository @Inject() (
       }
     }
   }
+
+  override def delete(req: DeleteReminderRequest): Future[Unit] =
+    Future {
+      db.withConnection { implicit c =>
+        SQL(f"DELETE FROM $table WHERE userId = {userId} AND id = {id}")
+          .on("id" -> req.id, "userId" -> req.user.id)
+          .execute()
+      }
+    }
 
 }
 
